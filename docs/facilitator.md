@@ -25,8 +25,8 @@ model state during the session.
 | 00:05-00:15 | MCP basics | Learners separate host, client, server, and model |
 | 00:15-00:35 | Build server | Learners expose and call a typed FastMCP tool |
 | 00:35-01:00 | Client and loop | Learners trace and run the local agent loop |
-| 01:00-01:15 | Browser | Learners observe tool behavior in the UI |
-| 01:15-01:23 | Production | Group identifies authorization and safety controls |
+| 01:00-01:10 | Browser | Learners observe tool behavior in the UI |
+| 01:10-01:23 | Production | Group runs approval and identifies safety controls |
 | 01:23-01:30 | Assessment | Knowledge check and close |
 
 Do not turn the setup check into an installation tutorial. Replace a bad VM or
@@ -100,17 +100,24 @@ For the agent, trace one iteration only:
 Then run the multi-tool question. Exact prose and order can vary. Judge the demo
 by valid tool use and grounded output, not identical wording.
 
-### 5. Browser - 15 minutes
+### 5. Browser - 10 minutes
 
 Start `workshop.ps1 web`, show the tool labels, and point out that the UI calls
 the same `run()` function as the CLI. Let learners try one valid destination;
-if time remains, use an invalid destination to demonstrate bounded failure.
+Use one valid destination and point out the shared `run()` function. Keep the
+invalid-destination example as a facilitator fallback rather than a required
+exercise.
 
-### 6. Production - 8 minutes
+### 6. Production - 13 minutes
 
 Ask: "What changes if `search_flights` spends real money?" Collect answers
 before showing the checklist. Look for per-user authorization, narrow
 credentials, approval, idempotency, audit logging, and bounded results.
+
+Run `workshop.ps1 approval`. Ask one learner to decline and confirm that no
+action occurs. Explain that the modern protocol returns `InputRequiredResult`,
+the client gathers input, and the original call is reissued with that response.
+The model does not approve its own request.
 
 ## Common questions
 

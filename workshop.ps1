@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("check", "client", "agent", "web", "server", "raw", "prepare-vm")]
+    [ValidateSet("check", "client", "agent", "approval", "test", "web", "server", "raw", "prepare-vm")]
     [string]$Action = "check",
 
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
@@ -31,6 +31,15 @@ switch ($Action) {
             "Find a flight from Bengaluru to Kochi and tell me what to pack."
         }
         & $Python src\solution\agent_raw.py $Question
+    }
+    "approval" {
+        & $Python src\solution\approval_demo.py
+    }
+    "test" {
+        & $Python -m unittest discover -s tests -v
+        if ($LASTEXITCODE -eq 0) {
+            & $Python scripts\validate_content.py
+        }
     }
     "web" {
         Write-Host "Open http://127.0.0.1:7932"

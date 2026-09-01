@@ -18,7 +18,7 @@ questions:
       - id: trust-schema
         text: Trust arguments whenever they match the generated schema
     correctOptionIds: [authorize-operation, bound-results, approve-actions]
-    explanation: Schema validation does not prove permission or intent. Production tools need authorization, limits, and approval for consequential work.
+    explanation: Schema validation does not prove permission or intent. Approval must be presented by the host and transported to the tool; it is not a decision delegated to the model.
 ---
 
 Turn the local architecture into a practical production checklist without

@@ -1,6 +1,6 @@
 # Use the browser app
 
-**Time: 15 minutes**
+**Time: 10 minutes**
 
 The browser is another interface over the same `run()` function. It does not
 contain a second agent implementation and it does not connect directly to the
@@ -52,7 +52,7 @@ Submit this question:
 `What is the weather in Pune?`
 
 The orange label shows which MCP tool the model requested. If time remains, try
-one of these slower extensions:
+one slower extension:
 
 - `Find a flight from Bengaluru to Kochi and tell me what to pack.` usually
   needs weather or forecast information plus a flight search.
@@ -61,6 +61,12 @@ one of these slower extensions:
 
 Exact prose can vary, but tool results should remain deterministic for the same
 city and date.
+
+![Bharat Travel Desk showing a Pune weather answer and the orange get_weather tool trace.](images/browser-tool-trace.png)
+
+*Expected browser state. Exact prose and weather values can vary by workshop
+date; look for the orange `get_weather({"city":"Pune"})` trace beneath a grounded
+answer.*
 
 ## 4. Inspect the HTTP boundary
 

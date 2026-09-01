@@ -2,7 +2,7 @@
 id: browser-app
 title: Reuse the loop in a local browser
 order: 1
-estimatedMinutes: 15
+estimatedMinutes: 10
 ---
 
 ## Keep one agent core
@@ -36,10 +36,16 @@ Open <http://127.0.0.1:7932> and submit:
 `What is the weather in Pune?`
 
 The tool label shows the model's MCP request. Exact prose can vary, but the
-answer should use deterministic tool results. If time remains, try the slower
-multi-tool question `Find a flight from Bengaluru to Kochi and tell me what to
-pack.`, or ask `Can you plan a trip to Atlantis?` to confirm that unsupported
-destinations do not gain invented data.
+answer should use deterministic tool results.
+
+![Bharat Travel Desk showing a Pune weather answer and the orange get_weather tool trace.](../../../images/browser-tool-trace.png)
+
+*Expected browser state. Exact prose and weather values can vary by workshop
+date; look for the orange `get_weather({"city":"Pune"})` trace beneath a grounded
+answer.*
+
+If time remains, try the slower multi-tool question `Find a flight from
+Bengaluru to Kochi and tell me what to pack.`
 
 The browser sends only a local JSON question to `/api/chat`. It never receives
 model files or permission to call arbitrary MCP methods.
