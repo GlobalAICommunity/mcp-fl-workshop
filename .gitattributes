@@ -1,0 +1,2 @@
+# The Global AI Learn loader requires literal LF front-matter delimiters.
+global-ai-learn/**/*.md text eol=lf

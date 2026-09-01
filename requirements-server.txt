@@ -1,0 +1,14 @@
+# Direct dependencies for the MCP server, client, local model, and browser app.
+# VM images install the fully resolved requirements-lock.txt.
+#
+#   py -3.11 -m venv .venv
+#   .venv\Scripts\python -m pip install -r requirements-lock.txt
+#
+# The workshop targets FastMCP 4.0.0 and the current Foundry Local v2 SDK.
+# The VM image must install these and cache the model before it goes offline.
+
+fastmcp==4.0.0
+foundry-local-sdk-winml==1.2.4
+python-dotenv==1.2.3
+starlette==1.6.0
+uvicorn==0.52.4
