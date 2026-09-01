@@ -1,6 +1,6 @@
 # Review production controls
 
-**Time: 8 minutes**
+**Time: 13 minutes**
 
 The workshop is intentionally local, deterministic, and low privilege. A real
 MCP deployment changes the transport and the risk profile, but not the core
@@ -39,6 +39,26 @@ not rely on a model to enforce access control.
 Running the model locally improves data locality. It does not make tool calls
 safe by itself.
 
+## Run a modern approval flow
+
+`src/solution/approval_demo.py` places no real booking. It demonstrates the
+MCP `2026-07-28` guard flow for an action that would need consent:
+
+```powershell
+.\workshop.ps1 approval
+```
+
+Choose yes, no, or cancel. On the first call, `hold_flight` returns an
+`InputRequiredResult` containing an `ElicitRequest`. The FastMCP client presents
+that request through its `elicitation_handler`, then reissues the original tool
+call with the response. The tool reads `ctx.input_responses` and returns a final
+result. `input_required_max_rounds=2` prevents an accidental infinite exchange.
+
+This is different from asking the model to confirm. The host presents the
+choice to the user and transports the result. Decline and cancel both leave the
+fictional action untouched. Never collect passwords, payment details, tokens,
+or other secrets through form elicitation.
+
 ## Keep context bounded
 
 Tool output consumes the model's context window. Prefer structured, filtered,
@@ -50,6 +70,20 @@ can be both expensive and an injection channel.
 For stdio, stdout carries MCP messages. Send diagnostics to stderr or structured
 logs. For remote servers, avoid logging tokens, secrets, complete prompts, or
 sensitive tool results.
+
+## Optional extension: Streamable HTTP
+
+Stdio is the right event default because it has no listening port. To study the
+remote transport after the workshop, run a copy of the server on loopback:
+
+```python
+mcp.run(transport="http", host="127.0.0.1", port=8000)
+```
+
+Then connect a client to `http://127.0.0.1:8000/mcp`. This changes transport,
+not tool schemas. Keep this extension on loopback for the lab. Before binding to
+a network interface, add TLS, authentication, per-operation authorization,
+origin validation, rate limits, and deployment-specific network controls.
 
 ## Your next useful extension
 

@@ -93,12 +93,16 @@ def mcp_tools_to_openai(tools) -> list[dict]:
 async def run(
     question: str,
     on_tool_call: Callable[[str, dict], None] | None = None,
+    chat_client=None,
+    mcp_server=None,
 ) -> str:
-    local_model = get_local_model()
-    llm = local_model.client
+    llm = chat_client
+    if llm is None:
+        llm = get_local_model().client
     llm.settings.tool_choice = {"type": "required"}
 
-    async with Client(server_transport()) as mcp:
+    transport = mcp_server if mcp_server is not None else server_transport()
+    async with Client(transport) as mcp:
         tools = mcp_tools_to_openai(await mcp.list_tools()) + [FINAL_ANSWER_TOOL]
 
         messages: list[dict] = [
@@ -176,11 +180,21 @@ async def run(
                     else:
                         on_tool_call(name, args)
                     result = await mcp.call_tool(name, args, raise_on_error=False)
-                    output = "\n".join(
-                        block.text for block in result.content if hasattr(block, "text")
-                    )
+                    structured = result.structured_content
+                    if result.is_error or structured is None:
+                        output = "\n".join(
+                            block.text
+                            for block in result.content
+                            if hasattr(block, "text")
+                        )
+                    else:
+                        output = json.dumps(structured, separators=(",", ":"))
                     if name == "search_flights" and not result.is_error:
-                        flights = json.loads(output)
+                        flights = (
+                            structured.get("result")
+                            if isinstance(structured, dict)
+                            else None
+                        )
                         if isinstance(flights, list) and flights:
                             first_flight = flights[0]
 

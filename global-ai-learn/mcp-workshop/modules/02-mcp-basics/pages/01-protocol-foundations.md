@@ -58,5 +58,10 @@ The helper sends `server/discover` with protocol revision `2026-07-28` in
 The second command performs useful list, call, read, and prompt operations while
 FastMCP handles the same wire envelope.
 
+The protocol revision defines the grammar, while `server/discover` advertises
+the capabilities of this particular peer. Clients must inspect negotiated
+capabilities before using optional features such as elicitation. A matching
+version does not imply that every optional capability is available.
+
 Because stdout is the stdio protocol channel, server diagnostics belong on
 stderr or in a logging sink.

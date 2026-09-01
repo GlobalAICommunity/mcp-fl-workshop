@@ -25,6 +25,20 @@ The program discovers tools, calls valid and invalid inputs, reads a resource,
 and gets a prompt. There is no model or system prompt. This proves MCP is an
 application protocol, not an agent framework.
 
+Typed tool results are available as structured data. FastMCP wraps the Python
+return value under `result`:
+
+```python
+result = await client.call_tool(
+    "search_flights",
+    {"origin": "Bengaluru", "destination": "Kochi", "max_results": 1},
+)
+first_flight = result.structured_content["result"][0]
+```
+
+Use `structured_content` for application logic. Keep text as a fallback for
+errors and servers that do not publish structured output.
+
 ## Load only cached model assets
 
 `src/model_config.py` resolves `qwen3.5-0.8b` through the Foundry Local catalog,
@@ -73,8 +87,9 @@ Open `src/solution/agent_raw.py` and follow this sequence:
 4. preserve structured calls but omit duplicate raw `<tool_call>` markup
 5. return the answer if the model calls `final_answer` alone
 6. otherwise execute each travel tool with `raise_on_error=False`
-7. append each result with the matching `tool_call_id`
-8. repeat until `final_answer` is called or `MAX_TURNS` is reached
+7. serialize successful `structured_content`, while preserving text errors
+8. append each result with the matching `tool_call_id`
+9. repeat until `final_answer` is called or `MAX_TURNS` is reached
 
 Foundry Local SDK 1.2.4 reliably parses this model's calls in required-tool
 mode. `final_answer` supplies a stopping signal without being forwarded to MCP.
@@ -103,3 +118,17 @@ Try a single-tool question:
 
 Then ask for an unsupported city. The host sends actionable tool errors back to
 the model so it can correct the request or explain the supported set.
+
+## Check three code boundaries
+
+Open `src/solution/agent_raw.py` and identify:
+
+1. the property that moves an MCP input schema into a model tool definition
+2. the branch between successful structured results and text errors
+3. the `MAX_TURNS` limit that stops a model which never finishes
+
+Run the deterministic checks:
+
+```powershell
+.\workshop.ps1 test
+```

@@ -58,6 +58,11 @@ FastMCP 4.0.0 speaks MCP revision `2026-07-28`. Requests carry protocol and
 client details in `_meta`, and `server/discover` describes server capabilities.
 FastMCP handles that envelope for normal client code.
 
+The revision identifies the protocol grammar; discovery identifies what this
+particular peer can do. A client must inspect negotiated capabilities before it
+uses optional features such as elicitation. Matching version strings alone do
+not prove that a server or client implements every optional capability.
+
 ## See the wire
 
 Run the raw protocol helper:
@@ -73,7 +78,7 @@ request without using `fastmcp.Client`. Find these fields in the output:
 - request `id`
 - method `server/discover`
 - `_meta` protocol version and client information
-- a result describing the server
+- the server identity and advertised capabilities in the result
 
 Now compare that with the SDK-driven client:
 

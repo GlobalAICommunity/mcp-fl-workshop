@@ -14,6 +14,7 @@ learningOutcomes:
   - Build a FastMCP 4 server with typed tools, a resource, and a prompt
   - Trace a complete tool-calling loop using a cached Foundry Local model
   - Reuse one MCP agent loop from a command line and a browser
+  - Run a host-mediated approval with the modern MCP input-required flow
   - Identify authorization, approval, logging, and output controls for production tools
 modules: [setup, mcp-basics, build-server, agent-loop, browser, production-next]
 ---

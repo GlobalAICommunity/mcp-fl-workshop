@@ -56,6 +56,22 @@ result = await client.call_tool(
 )
 ```
 
+Successful typed tools provide `structured_content`. FastMCP wraps a Python
+return value under `result`, so a flight search has this shape:
+
+```python
+result = await client.call_tool(
+    "search_flights",
+    {"origin": "Bengaluru", "destination": "Kochi", "max_results": 1},
+)
+flights = result.structured_content["result"]
+first_flight = flights[0]
+```
+
+Use the structured object for application logic. Text content remains useful
+for display, recoverable errors, and compatibility with servers that do not
+publish structured output.
+
 There is no model, prompt, or API key in this program. MCP is working before any
 agent behavior is added.
 
@@ -131,8 +147,10 @@ subtle failures:
 - keep the assistant turn and its structured tool requests
 - omit duplicate raw `<tool_call>` markup when structured calls are present
 - attach every tool result to the matching `tool_call_id`
-- if a flight answer omits required fields, insert them from the first structured
-    flight result instead of starting another slow model turn
+- serialize `result.structured_content` for the model instead of parsing JSON
+    back out of a text block
+- if a flight answer omits required fields, insert them from the first
+    structured flight result instead of starting another slow model turn
 - cap the loop with `MAX_TURNS`
 
 The loop also gives malformed JSON and MCP tool errors back to the model as
@@ -156,6 +174,23 @@ Try a smaller request:
 
 Then ask for an unsupported city. Inspect whether the model reads the error,
 calls `list_destinations`, or explains the supported set.
+
+## Guided code checkpoints
+
+Open `src/solution/agent_raw.py` and find these three boundaries:
+
+1. **Schema TODO:** identify the one property that moves an MCP input schema
+    into the model's function definition.
+2. **Result TODO:** identify where successful structured results and text errors
+    take different paths.
+3. **Safety TODO:** change `MAX_TURNS` to `2`, predict the failure message for a
+    model that never stops, then restore it to `6`.
+
+Run the deterministic checks after inspecting the loop:
+
+```powershell
+.\workshop.ps1 test
+```
 
 ## Checkpoint
 

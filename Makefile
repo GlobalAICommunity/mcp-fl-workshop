@@ -5,6 +5,8 @@
 #   make server    run the MCP server over stdio
 #   make client    module 4 part A — talk to the server, no LLM
 #   make agent     module 4 part B — the hand-written agent loop
+#   make approval  module 6 — modern MCP approval flow
+#   make test      run deterministic offline tests
 #   make web       module 5 — the handwritten agent loop in a browser
 #   make jsonrpc   module 2 — poke the server with raw JSON-RPC
 #   make prepare-vm download the model while building the online VM image
@@ -14,7 +16,7 @@ PY ?= py -3.11
 SERVER_PY := .venv/Scripts/python.exe
 Q ?= Find a flight from Bengaluru to Kochi and tell me what to pack.
 
-.PHONY: setup check server client agent web jsonrpc prepare-vm clean
+.PHONY: setup check server client agent approval test web jsonrpc prepare-vm clean
 
 setup: .venv
 	@echo
@@ -36,6 +38,13 @@ client:
 
 agent:
 	$(SERVER_PY) src/solution/agent_raw.py "$(Q)"
+
+approval:
+	$(SERVER_PY) src/solution/approval_demo.py
+
+test:
+	$(SERVER_PY) -m unittest discover -s tests -v
+	$(SERVER_PY) scripts/validate_content.py
 
 web:
 	@echo "Open http://127.0.0.1:7932"

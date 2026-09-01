@@ -44,8 +44,8 @@ Full setup guidance is in [docs/01-get-started.md](docs/01-get-started.md).
 | 2 | [Understand MCP](docs/02-mcp-basics.md) | 10 min |
 | 3 | [Build a FastMCP server](docs/03-build-a-server.md) | 20 min |
 | 4 | [Run a client and agent loop](docs/04-raw-client.md) | 25 min |
-| 5 | [Use the browser app](docs/05-browser.md) | 15 min |
-| 6 | [Review production controls](docs/06-where-next.md) | 8 min |
+| 5 | [Use the browser app](docs/05-browser.md) | 10 min |
+| 6 | [Review production controls and approval](docs/06-where-next.md) | 13 min |
 | 7 | Knowledge check and close | 7 min |
 | | **Total** | **90 min** |
 
@@ -82,6 +82,8 @@ Run all commands from the repository root:
 .\workshop.ps1 client
 .\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
 .\workshop.ps1 web
+.\workshop.ps1 approval
+.\workshop.ps1 test
 ```
 
 The browser command serves <http://127.0.0.1:7932>. Stop it with `Ctrl+C`.
@@ -96,9 +98,11 @@ docs/                     timed workshop and reference material
 global-ai-learn/          Global AI Learn version of the course
 scripts/prepare_vm.py     online image-building step
 scripts/verify_setup.py   offline acceptance check
+scripts/validate_content.py Learn schema, timing, and link validation
 scripts/raw_jsonrpc.py    protocol demo without a client SDK
 src/model_config.py       cache-only Foundry Local configuration
-src/solution/             completed server, client, agent, and browser app
+src/solution/             completed server, client, agent, approval, and browser app
+tests/                    deterministic offline protocol and loop tests
 requirements-lock.txt     accepted Windows dependency closure
 workshop.ps1              attendee command surface
 ```
