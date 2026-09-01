@@ -1,0 +1,20 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+.venv-*/
+venv/
+
+# Secrets — never commit real keys
+.env
+
+# Offline assets prepared before the event
+vendor/
+
+# Browser validation output
+.playwright-mcp/
+
+# OS noise
+.DS_Store
