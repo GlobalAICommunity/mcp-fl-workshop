@@ -1,4 +1,12 @@
-# Build MCP Agents Locally
+### Access and Credentials
+
+| Item | Detail |
+| :--- | :----- |
+| User | +++@lab.VirtualMachine(Workstation1).Username+++ |
+| Password | +++@lab.VirtualMachine(Workstation1).Password+++ |
+|  |  |
+
+Build MCP Agents Locally
 
 This guide combines the six learner lab lessons for the offline Windows
 workshop. Begin on the prepared workshop VM with the repository open in VS Code.
@@ -10,13 +18,13 @@ repository root. The six lessons take 83 minutes, leaving 7 minutes of the
 90-minute session for the knowledge check and close.
 
 | Lesson | Time |
-|---|---:|
-| [1. Check the offline VM](#lesson-1-check-the-offline-vm) | 5 minutes |
-| [2. Understand MCP](#lesson-2-understand-mcp) | 10 minutes |
-| [3. Build a FastMCP server](#lesson-3-build-a-fastmcp-server) | 20 minutes |
-| [4. Run a client and agent loop](#lesson-4-run-a-client-and-agent-loop) | 25 minutes |
-| [5. Use the browser app](#lesson-5-use-the-browser-app) | 10 minutes |
-| [6. Review production controls](#lesson-6-review-production-controls) | 13 minutes |
+| ------ | ---: |
+|  [1. Check the offline VM](#lesson-1-check-the-offline-vm) | 5 minutes |
+|  [2. Understand MCP](#lesson-2-understand-mcp) | 10 minutes |
+|  [3. Build a FastMCP server](#lesson-3-build-a-fastmcp-server) | 20 minutes |
+|  [4. Run a client and agent loop](#lesson-4-run-a-client-and-agent-loop) | 25 minutes |
+|  [5. Use the browser app](#lesson-5-use-the-browser-app) | 10 minutes |
+|  [6. Review production controls](#lesson-6-review-production-controls) | 13 minutes |
 
 ## Lesson 1: Check the Offline VM
 
@@ -42,7 +50,7 @@ Confirm the terminal is at the repository root. It must contain
 Get-ChildItem
 ```
 
-All workshop commands assume this location.
+all workshop commands assume this location.
 
 ### 2. Run the Offline Check
 
@@ -50,7 +58,7 @@ All workshop commands assume this location.
 .\workshop.ps1 check
 ```
 
-The check does not download anything. It verifies:
+the check does not download anything. It verifies:
 
 - Python 3.11 or newer.
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in `.venv`.
@@ -70,7 +78,7 @@ A ready image ends with output similar to:
 All good - you are ready for the offline workshop.
 ```
 
-The first model load can take a little longer than later calls.
+the first model load can take a little longer than later calls.
 
 ### 3. If PowerShell Blocks the Script
 
@@ -83,7 +91,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\workshop.ps1 check
 ```
 
-This setting disappears when the terminal closes and does not override Group
+this setting disappears when the terminal closes and does not override Group
 Policy. Ask the facilitator if organizational policy blocks the script.
 
 ### 4. If Any Check Fails
@@ -94,8 +102,10 @@ is the reproducible unit for this workshop.
 
 ### Checkpoint
 
-You are ready when all five checks show `[  ok  ]` while the VM is offline.
+You are ready when all five checks show `[ ok ]` while the VM is offline.
 Continue to Lesson 2.
+
+======
 
 ## Lesson 2: Understand MCP
 
@@ -113,7 +123,7 @@ from two different levels of abstraction.
 ### The Integration Problem
 
 Without a shared protocol, each of $M$ model hosts needs a custom adapter for
-each of $N$ systems. That produces roughly $M \times N$ integrations.
+each of $N$ systems. That produces roughly $M \\times N$ integrations.
 
 With MCP, hosts implement the client side and systems implement the server side.
 The shape becomes approximately $M + N$.
@@ -126,11 +136,11 @@ flowchart LR
     S --> D[Travel functions and data]
 ```
 
-In this workshop:
+in this workshop:
 
 - The CLI or browser application is the **host**.
 - `fastmcp.Client` owns the MCP **client** connection.
-- [src/solution/travel_server.py](src/solution/travel_server.py) is the MCP **server**.
+    - [src/solution/travel_server.py](src/solution/travel_server.py) is the MCP **server**.
 - Foundry Local runs the **model**.
 
 The model never talks directly to the server. The host discovers tools, gives
@@ -140,7 +150,7 @@ returns results to the model.
 ### The Three Server Primitives
 
 | Primitive | Usually selected by | Purpose | Workshop example |
-|---|---|---|---|
+| --------- | ------------------- | ------- | ---------------- |
 | Tool | Model | Perform an action or calculation | `get_weather` |
 | Resource | Application | Read reference context | `travel://destinations` |
 | Prompt | User | Start a reusable workflow | `plan_a_trip` |
@@ -174,7 +184,7 @@ Run the raw protocol helper:
 .\workshop.ps1 raw
 ```
 
-The helper starts the reference server and sends a `server/discover` JSON-RPC
+the helper starts the reference server and sends a `server/discover` JSON-RPC
 request without using `fastmcp.Client`. Find these fields in the output:
 
 - `jsonrpc: "2.0"`.
@@ -189,7 +199,7 @@ Now compare that with the SDK-driven client:
 .\workshop.ps1 client
 ```
 
-The client performs discovery, calls tools, reads a resource, and gets a prompt.
+the client performs discovery, calls tools, reads a resource, and gets a prompt.
 The protocol is the same; FastMCP removes the envelope bookkeeping.
 
 ### Checkpoint
@@ -198,6 +208,7 @@ You should be able to explain why the model, host, client, and server are four
 different roles, and who controls tools, resources, and prompts.
 
 Continue to Lesson 3.
+======
 
 ## Lesson 3: Build a FastMCP Server
 
@@ -221,7 +232,7 @@ New-Item -ItemType Directory -Force src\workshop | Out-Null
 New-Item -ItemType File -Force src\workshop\travel_server.py | Out-Null
 ```
 
-Open `src/workshop/travel_server.py` and add:
+open `src/workshop/travel_server.py` and add:
 
 ```python
 from typing import Annotated
@@ -290,7 +301,7 @@ if __name__ == "__main__":
 `FastMCP` reads ordinary Python information and publishes MCP definitions:
 
 | Python feature | MCP effect |
-|---|---|
+| -------------- | ---------- |
 | Function name | Tool or prompt name |
 | Docstring | Description shown to clients and models |
 | Type annotation | JSON Schema field type |
@@ -307,7 +318,7 @@ instructions. Type validation is useful, but it is not authorization.
 .\.venv\Scripts\python -m py_compile src\workshop\travel_server.py
 ```
 
-No output means the file compiled.
+no output means the file compiled.
 
 ### 4. Discover Your Server
 
@@ -317,13 +328,13 @@ Use the raw helper and point it at your file:
 .\workshop.ps1 raw server/discover '{}' --server src\workshop\travel_server.py
 ```
 
-Then call the weather tool:
+then call the weather tool:
 
 ```powershell
 .\workshop.ps1 raw tools/call '{"name":"get_weather","arguments":{"city":"Pune"}}' --server src\workshop\travel_server.py
 ```
 
-The result includes human-readable content and structured fields derived from
+the result includes human-readable content and structured fields derived from
 `Weather`.
 
 Try an unsupported city:
@@ -332,7 +343,7 @@ Try an unsupported city:
 .\workshop.ps1 raw tools/call '{"name":"get_weather","arguments":{"city":"Atlantis"}}' --server src\workshop\travel_server.py
 ```
 
-The failure is returned as a tool result rather than crashing the handler. An
+the failure is returned as a tool result rather than crashing the handler. An
 agent could use the supported-city hint to try again; this one-shot raw helper
 then exits normally after receiving the response.
 
@@ -346,7 +357,7 @@ in INR, parameter constraints, and ten Indian destinations. Open
 .\workshop.ps1 client
 ```
 
-Notice that FastMCP 4 list methods return Python lists directly and
+notice that FastMCP 4 list methods return Python lists directly and
 `call_tool()` raises for tool errors by default. The reference client passes
 `raise_on_error=False` when it intentionally demonstrates recoverable failure.
 
@@ -356,6 +367,8 @@ You have exposed tools, a resource, and a prompt from normal typed Python and
 observed a successful structured result plus a recoverable error.
 
 Continue to Lesson 4.
+
+======
 
 ## Lesson 4: Run a Client and Agent Loop
 
@@ -377,7 +390,7 @@ Run the completed client:
 .\workshop.ps1 client
 ```
 
-It starts [src/solution/travel_server.py](src/solution/travel_server.py) over
+it starts [src/solution/travel_server.py](src/solution/travel_server.py) over
 stdio and demonstrates five ordinary client operations:
 
 1. List tools.
@@ -397,7 +410,7 @@ async with Client(SERVER) as client:
     weather = await client.call_tool("get_weather", {"city": "Pune"})
 ```
 
-FastMCP 4 infers a Python stdio transport from the path. A bare string ending in
+fastmcp 4 infers a Python stdio transport from the path. A bare string ending in
 `.py` is deprecated because it is ambiguous.
 
 List and read methods return lists directly in FastMCP 4:
@@ -419,7 +432,7 @@ result = await client.call_tool(
 )
 ```
 
-Successful typed tools provide `structured_content`. FastMCP wraps a Python
+successful typed tools provide `structured_content`. FastMCP wraps a Python
 return value under `result`, so a flight search has this shape:
 
 ```python
@@ -431,7 +444,7 @@ flights = result.structured_content["result"]
 first_flight = flights[0]
 ```
 
-Use the structured object for application logic. Text content remains useful
+use the structured object for application logic. Text content remains useful
 for display, recoverable errors, and compatibility with servers that do not
 publish structured output.
 
@@ -453,14 +466,14 @@ local_model = get_local_model()
 llm = local_model.client
 ```
 
-The Foundry Local chat call is synchronous, while the MCP client is asynchronous.
+the Foundry Local chat call is synchronous, while the MCP client is asynchronous.
 The agent uses `asyncio.to_thread` so inference does not block the event loop:
 
 ```python
 response = await asyncio.to_thread(llm.complete_chat, messages, tools)
 ```
 
-No local HTTP endpoint is required.
+no local HTTP endpoint is required.
 
 Foundry Local SDK 1.2.4 reliably returns structured calls for this model when
 `tool_choice` is `required`. The agent therefore supplies the four MCP travel
@@ -489,7 +502,7 @@ def mcp_tools_to_openai(tools) -> list[dict]:
     ]
 ```
 
-The Python property is `input_schema`; the MCP JSON field on the wire is
+the Python property is `input_schema`; the MCP JSON field on the wire is
 `inputSchema`.
 
 ### The Complete Loop
@@ -505,16 +518,16 @@ flowchart TD
     R --> M
 ```
 
-Open the `run()` function and find each arrow in code. These details prevent
+open the `run()` function and find each arrow in code. These details prevent
 subtle failures:
 
 - Keep the assistant turn and its structured tool requests.
 - Omit duplicate raw `<tool_call>` markup when structured calls are present.
 - Attach every tool result to the matching `tool_call_id`.
 - Serialize `result.structured_content` for the model instead of parsing JSON
-  back out of a text block.
+    back out of a text block.
 - If a flight answer omits required fields, insert them from the first
-  structured flight result instead of starting another slow model turn.
+    structured flight result instead of starting another slow model turn.
 - Cap the loop with `MAX_TURNS`.
 
 The loop also gives malformed JSON and MCP tool errors back to the model as
@@ -526,7 +539,7 @@ text. That lets the next turn correct a request instead of crashing the host.
 .\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
 ```
 
-You should see one or more `-> calling ...` lines followed by a concise answer.
+you should see one or more `-> calling ...` lines followed by a concise answer.
 Flight fares are fictional and shown in INR. Exact wording and call order can
 vary because the model is generative.
 
@@ -536,7 +549,7 @@ Try a smaller request:
 .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
-Then ask for an unsupported city. Inspect whether the model reads the error,
+then ask for an unsupported city. Inspect whether the model reads the error,
 calls `list_destinations`, or explains the supported set.
 
 ### Guided Code Checkpoints
@@ -545,11 +558,11 @@ Open [src/solution/agent_raw.py](src/solution/agent_raw.py) and find these three
 boundaries:
 
 1. **Schema TODO:** Identify the one property that moves an MCP input schema
-   into the model's function definition.
+    into the model's function definition.
 2. **Result TODO:** Identify where successful structured results and text errors
-   take different paths.
+    take different paths.
 3. **Safety TODO:** Change `MAX_TURNS` to `2`, predict the failure message for a
-   model that never stops, then restore it to `6`.
+    model that never stops, then restore it to `6`.
 
 Run the deterministic checks after inspecting the loop:
 
@@ -566,6 +579,8 @@ You can now separate three mechanisms:
 - The host loop preserves conversation state and connects the two.
 
 Continue to Lesson 5.
+
+======
 
 ## Lesson 5: Use the Browser App
 
@@ -593,7 +608,7 @@ app = Starlette(
 )
 ```
 
-The API endpoint validates the question, records tool-call events, and delegates
+the API endpoint validates the question, records tool-call events, and delegates
 to the existing loop:
 
 ```python
@@ -607,7 +622,7 @@ answer = await run(
 return JSONResponse({"answer": answer, "tools": tools})
 ```
 
-The callback changes presentation only. Tool discovery, Foundry Local calls,
+the callback changes presentation only. Tool discovery, Foundry Local calls,
 MCP execution, result matching, and turn limits remain in
 [src/solution/agent_raw.py](src/solution/agent_raw.py).
 
@@ -617,7 +632,7 @@ MCP execution, result matching, and turn limits remain in
 .\workshop.ps1 web
 ```
 
-Open <http://127.0.0.1:7932>. Keep the terminal visible for errors and stop the
+open [http://127.0.0.1:7932](http://127.0.0.1:7932). Keep the terminal visible for errors and stop the
 server with `Ctrl+C` when finished.
 
 ### 3. Exercise the Agent
@@ -630,18 +645,16 @@ The orange label shows which MCP tool the model requested. If time remains, try
 one slower extension:
 
 - `Find a flight from Bengaluru to Kochi and tell me what to pack.` usually
-  needs weather or forecast information plus a flight search.
+    needs weather or forecast information plus a flight search.
 - `Can you plan a trip to Atlantis?` demonstrates a bounded failure rather than
-  invented travel data.
+    invented travel data.
 
 Exact prose can vary, but tool results should remain deterministic for the same
 city and date.
 
-![Bharat Travel Desk showing a Pune weather answer and the orange get_weather tool trace.](docs/images/browser-tool-trace.png)
+! [Bharat Travel Desk showing a Pune weather answer and the orange get_weather tool trace.](docs/images/browser-tool-trace.png)
 
-*Expected browser state. Exact prose and weather values can vary by workshop
-date; look for the orange `get_weather({"city":"Pune"})` trace beneath a grounded
-answer.*
+*Expected browser state. Exact prose and weather values can vary by workshopdate; look for the orange `get_weather({"city":"Pune"})` trace beneath a groundedanswer.*
 
 ### 4. Inspect the HTTP Boundary
 
@@ -651,7 +664,7 @@ The browser sends only this local request:
 {"question":"What is the weather in Pune?"}
 ```
 
-The response has an answer and a presentation-friendly tool trace:
+the response has an answer and a presentation-friendly tool trace:
 
 ```json
 {
@@ -662,7 +675,7 @@ The response has an answer and a presentation-friendly tool trace:
 }
 ```
 
-The browser never receives model files, server credentials, or permission to
+the browser never receives model files, server credentials, or permission to
 execute arbitrary MCP methods. In a production app, this HTTP boundary is also
 where you would authenticate the user, enforce request limits, attach a request
 ID, and apply an overall timeout.
@@ -681,6 +694,8 @@ MCP tool choices without exposing internal reasoning.
 
 Continue to Lesson 6.
 
+======
+
 ## Lesson 6: Review Production Controls
 
 **Time: 13 minutes**
@@ -696,7 +711,7 @@ lets you inspect consent without making a real booking.
 ### From Lab to Service
 
 | Lab choice | Production decision |
-|---|---|
+| ---------- | ------------------- |
 | Local stdio subprocess | Stdio for local hosts or Streamable HTTP for remote clients |
 | No user identity | OAuth and per-operation authorization |
 | Fictional in-memory data | Narrow service credentials and audited data access |
@@ -736,7 +751,7 @@ would need consent:
 .\workshop.ps1 approval
 ```
 
-Choose yes, no, or cancel. On the first call, `hold_flight` returns an
+choose yes, no, or cancel. On the first call, `hold_flight` returns an
 `InputRequiredResult` containing an `ElicitRequest`. The FastMCP client presents
 that request through its `elicitation_handler`, then reissues the original tool
 call with the response. The tool reads `ctx.input_responses` and returns a final
@@ -768,7 +783,7 @@ remote transport after the workshop, run a copy of the server on loopback:
 mcp.run(transport="http", host="127.0.0.1", port=8000)
 ```
 
-Then connect a client to `http://127.0.0.1:8000/mcp`. This changes transport,
+then connect a client to `http://127.0.0.1:8000/mcp`. This changes transport,
 not tool schemas. Keep this extension on loopback for the lab. Before binding to
 a network interface, add TLS, authentication, per-operation authorization,
 origin validation, rate limits, and deployment-specific network controls.
@@ -783,6 +798,8 @@ Add one low-risk, India-focused capability to the reference server, such as:
 
 Give it a narrow schema, deterministic sample data, bounded output, and a test
 for both a valid request and a recoverable error.
+
+======
 
 ### Close
 

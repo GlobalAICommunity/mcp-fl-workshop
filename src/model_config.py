@@ -8,7 +8,9 @@ credentials, or a fixed localhost port.
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
@@ -76,7 +78,17 @@ def get_local_model() -> LocalModel:
     from foundry_local_sdk import Configuration, FoundryLocalManager
 
     if FoundryLocalManager.instance is None:
-        FoundryLocalManager.initialize(Configuration(app_name="mcp-fastmcp-workshop"))
+        config = Configuration(app_name="mcp-fastmcp-workshop")
+        log_dir = os.getenv("MCP_WORKSHOP_LOG_DIR", "").strip()
+        if log_dir:
+            from foundry_local_sdk.logging_helper import LogLevel
+
+            logs_path = Path(log_dir).expanduser().resolve()
+            logs_path.mkdir(parents=True, exist_ok=True)
+            config.logs_dir = str(logs_path)
+            config.log_level = LogLevel.DEBUG
+            print(f"Foundry Local debug logs: {logs_path}", file=sys.stderr)
+        FoundryLocalManager.initialize(config)
 
     manager = FoundryLocalManager.instance
     alias = get_model_alias()

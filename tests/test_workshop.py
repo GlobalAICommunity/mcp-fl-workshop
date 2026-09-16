@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import sys
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -15,7 +17,7 @@ sys.path.insert(0, str(REPO_ROOT / "src" / "solution"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from agent_raw import MAX_TURNS, run  # noqa: E402
-from model_config import ConfigError  # noqa: E402
+from model_config import ConfigError, get_local_model  # noqa: E402
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
 
@@ -59,6 +61,29 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    def test_native_debug_logging_is_opt_in(self) -> None:
+        with TemporaryDirectory() as directory:
+            log_dir = Path(directory) / "logs"
+            for enabled in (False, True):
+                with self.subTest(enabled=enabled):
+                    environment = {"MCP_WORKSHOP_LOG_DIR": str(log_dir) if enabled else ""}
+                    with patch.dict(os.environ, environment), patch(
+                        "foundry_local_sdk.FoundryLocalManager"
+                    ) as manager:
+                        manager.instance = None
+                        manager.initialize.side_effect = ConfigError("initialization probe")
+                        with self.assertRaisesRegex(ConfigError, "initialization probe"):
+                            get_local_model()
+
+                    config = manager.initialize.call_args.args[0].as_dictionary()
+                    self.assertEqual(config["AppName"], "mcp-fastmcp-workshop")
+                    self.assertEqual(config["LogLevel"], "Debug" if enabled else "Warning")
+                    if enabled:
+                        self.assertEqual(config["LogsDir"], str(log_dir.resolve()))
+                        self.assertTrue(log_dir.is_dir())
+                    else:
+                        self.assertNotIn("LogsDir", config)
+
     async def test_completion_cancellation_does_not_replay_tool(self) -> None:
         chat_client = RepeatingChatClient()
         first_response = chat_client.complete_chat([], [])
