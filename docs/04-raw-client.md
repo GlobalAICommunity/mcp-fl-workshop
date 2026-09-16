@@ -33,6 +33,9 @@ ordinary client operations:
 Open [src/solution/mcp_client.py](../src/solution/mcp_client.py). Find `SERVER`
 and the `server_transport()` helper, which returns this trusted local `Path`:
 
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find:** module-level `SERVER` and `server_transport()`.
+
 ```python
 SERVER = REPO_ROOT / "src" / "solution" / "travel_server.py"
 
@@ -43,6 +46,9 @@ def server_transport() -> Path:
 ```
 
 Find the start of `main()`. It opens the client using that helper:
+
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find in:** `main()` at `Client(server_transport())`.
 
 ```python
 async def main() -> None:
@@ -56,6 +62,9 @@ FastMCP 4 infers a Python stdio transport from the path. A bare string ending in
 Inside `main()`, find `list_tools()` and compare the printed names with the
 terminal output:
 
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find in:** `main()` at `client.list_tools()`.
+
 ```python
 tools = await client.list_tools()
 print("Tools:")
@@ -67,6 +76,9 @@ print()
 Next, find `list_resources()` and `read_resource()`. List and read methods
 return lists directly in FastMCP 4:
 
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find in:** `main()` at `client.list_resources()`.
+
 ```python
 resources = await client.list_resources()
 print("Resources:", [str(resource.uri) for resource in resources])
@@ -76,6 +88,9 @@ print()
 ```
 
 Find `list_prompts()` immediately below the resource section:
+
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find in:** `main()` at `client.list_prompts()`.
 
 ```python
 prompts = await client.list_prompts()
@@ -90,6 +105,9 @@ print(json.dumps(prompt.messages[0].content.text, indent=2))
 `raise_on_error=False` only when the caller is prepared to inspect the error and
 recover. Find the Atlantis call and its `oops` result:
 
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find in:** `main()` at `oops = await client.call_tool(...)`.
+
 ```python
 oops = await client.call_tool(
     "get_weather", {"city": "Atlantis"}, raise_on_error=False
@@ -102,6 +120,9 @@ print()
 
 Successful typed tools provide `structured_content`. Find the earlier Pune
 call, which prints both the structured object and its text representation:
+
+**File:** [src/solution/mcp_client.py](../src/solution/mcp_client.py)  
+**Find in:** `main()` at `weather = await client.call_tool(...)`.
 
 ```python
 weather = await client.call_tool("get_weather", {"city": "Pune"})
@@ -130,6 +151,9 @@ The image builder performed the download earlier. Open
 [src/solution/agent_raw.py](../src/solution/agent_raw.py) and find the start of
 `run()`. It uses an injected client for tests or obtains the cached model's client:
 
+**File:** [src/solution/agent_raw.py](../src/solution/agent_raw.py)  
+**Find in:** `run()` at `llm = chat_client`.
+
 ```python
 llm = chat_client
 if llm is None:
@@ -140,6 +164,9 @@ llm.settings.tool_choice = {"type": "required"}
 The Foundry Local chat call is synchronous, while the MCP client is asynchronous.
 Inside the turn loop's `try` block, find `asyncio.to_thread`. It keeps inference
 from blocking the event loop:
+
+**File:** [src/solution/agent_raw.py](../src/solution/agent_raw.py)  
+**Find in:** `run()` at `response = await asyncio.to_thread(...)`.
 
 ```python
 response = await asyncio.to_thread(
@@ -161,6 +188,9 @@ last function is handled by the host and is never sent to the MCP server.
 
 MCP and model tool calling both use JSON Schema, but their outer objects differ.
 The adapter in `src/solution/agent_raw.py` is deliberately small:
+
+**File:** [src/solution/agent_raw.py](../src/solution/agent_raw.py)  
+**Find:** `mcp_tools_to_openai()`.
 
 ```python
 def mcp_tools_to_openai(tools) -> list[dict]:
