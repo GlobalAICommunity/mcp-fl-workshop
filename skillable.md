@@ -86,8 +86,9 @@ Policy. Ask the facilitator if organizational policy blocks the script.
 ### 4. If Any Check Fails
 
 Do not install packages or download a model during the event. Record the failed
-line and ask the facilitator for a clean VM or a paired workstation. The image
-is the reproducible unit for this workshop.
+line and log these on the provided repo as issues. The repo is available at:
+!IMAGE[qrcode-mcp.png](instructions358450/qrcode-mcp.png)
+
 
 ### Checkpoint
 
@@ -117,7 +118,7 @@ each of $N$ systems. That produces roughly $M \\times N$ integrations.
 With MCP, hosts implement the client side and systems implement the server side.
 The shape becomes approximately $M + N$.
 
-![MCP architecture: the host connects to Foundry Local and a FastMCP client, which exchanges MCP messages with the server exposing travel functions and data.](docs/images/skillable-1.png)
+!IMAGE[MCP architecture: the host connects to Foundry Local and a FastMCP client, which exchanges MCP messages with the server exposing travel functions and data](instructions358450/skillable-1.png)
 
 in this workshop:
 
@@ -490,8 +491,7 @@ the Python property is **input_schema**; the MCP JSON field on the wire is
 
 ### The Complete Loop
 
-![Agent loop: send the user question, messages, and tools to Foundry Local; return a final answer or execute travel tools through FastMCP, append results with matching call IDs, and repeat.](docs/images/skillable-2.png)
-
+!IMAGE [Agent loop: send the user question, messages, and tools to Foundry Local; return a final answer or execute travel tools through FastMCP, append results with matching call IDs, and repeat](instructions358450/skillable-2.png)
 open the **run()** function and find each arrow in code. These details prevent
 subtle failures:
 
