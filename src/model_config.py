@@ -77,6 +77,14 @@ def get_local_model() -> LocalModel:
     """Load the pre-cached Foundry Local model and return its chat client."""
     from foundry_local_sdk import Configuration, FoundryLocalManager
 
+    token_setting = os.getenv("MCP_WORKSHOP_MAX_TOKENS", "").strip() or "256"
+    try:
+        max_tokens = int(token_setting)
+    except ValueError as exc:
+        raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.") from exc
+    if max_tokens < 1:
+        raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.")
+
     if FoundryLocalManager.instance is None:
         config = Configuration(app_name="mcp-fastmcp-workshop")
         log_dir = os.getenv("MCP_WORKSHOP_LOG_DIR", "").strip()
@@ -112,7 +120,7 @@ def get_local_model() -> LocalModel:
 
     client = model.get_chat_client()
     client.settings.temperature = 0.0
-    client.settings.max_tokens = 256
+    client.settings.max_tokens = max_tokens
     return LocalModel(alias=alias, model_id=model.id, client=client)
 
 

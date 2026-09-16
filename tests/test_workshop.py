@@ -61,6 +61,28 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    def test_model_output_budget(self) -> None:
+        for value, expected in (("", 256), ("128", 128), (" 64 ", 64)):
+            with self.subTest(value=value), patch.dict(
+                os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
+            ), patch("foundry_local_sdk.FoundryLocalManager") as manager, patch(
+                "model_config.select_cpu_variant", side_effect=lambda model: model
+            ):
+                model = manager.instance.catalog.get_model.return_value
+                local_model = get_local_model()
+                self.assertEqual(local_model.client.settings.max_tokens, expected)
+                model.load.assert_not_called()
+
+    def test_model_output_budget_rejects_invalid_values(self) -> None:
+        for value in ("0", "-1", "1.5", "invalid"):
+            with self.subTest(value=value), patch.dict(
+                os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
+            ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
+                with self.assertRaisesRegex(ConfigError, "positive integer"):
+                    get_local_model()
+                manager.initialize.assert_not_called()
+                manager.instance.catalog.get_model.assert_not_called()
+
     def test_native_debug_logging_is_opt_in(self) -> None:
         with TemporaryDirectory() as directory:
             log_dir = Path(directory) / "logs"
