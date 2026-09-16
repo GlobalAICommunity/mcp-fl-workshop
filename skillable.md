@@ -85,8 +85,7 @@ Policy. Ask the facilitator if organizational policy blocks the script.
 
 ### 4. If Any Check Fails
 
-Do not install packages or download a model during the event. Record the failed
-line and log these on the provided repo as issues. The repo is available at:
+Do not install packages or download a model during the event. Record any issues on the provided repo as issues. The repo is available at:
 !IMAGE[qrcode-mcp.png](instructions358450/qrcode-mcp.png)
 
 
@@ -366,6 +365,12 @@ You will first run the supplied client, then inspect the local model connection
 and the handwritten loop. These use the reference server, so they do not depend
 on completing your learner server.
 
+**No code changes are required in Lesson 4.** Run the supplied programs and
+find the excerpts below in the solution files. Do not paste them into your
+learner server or run them separately. Each Python block is an exact excerpt;
+only its surrounding indentation is removed where needed for readability.
+Use the named functions and calls to locate code rather than fixed line numbers.
+
 ### Part A: Call MCP Without a Model
 
 Run the completed client:
@@ -383,49 +388,85 @@ stdio and demonstrates five ordinary client operations:
 4. Read **travel://destinations**.
 5. Get the **plan_a_trip** prompt for Kochi.
 
-Open [src/solution/mcp_client.py](src/solution/mcp_client.py). The transport is
-a trusted local **Path**:
+Open [src/solution/mcp_client.py](src/solution/mcp_client.py). Find **SERVER**
+and the **server_transport()** helper, which returns this trusted local **Path**:
 
 ```python
 SERVER = REPO_ROOT / "src" / "solution" / "travel_server.py"
 
-async with Client(SERVER) as client:
-    tools = await client.list_tools()
-    weather = await client.call_tool("get_weather", {"city": "Pune"})
+
+def server_transport() -> Path:
+    """Return the trusted local script FastMCP should launch over stdio."""
+    return SERVER
+```
+
+Find the start of **main()**. It opens the client using that helper:
+
+```python
+async def main() -> None:
+    async with Client(server_transport()) as client:
+        print(f"Connected. Protocol revision: {client.protocol_version}\n")
 ```
 
 fastmcp 4 infers a Python stdio transport from the path. A bare string ending in
 **.py** is deprecated because it is ambiguous.
 
-List and read methods return lists directly in FastMCP 4:
+Inside **main()**, find **list_tools()** and compare the printed names with the
+terminal output:
+
+```python
+tools = await client.list_tools()
+print("Tools:")
+for tool in tools:
+    print(f"  - {tool.name}: {tool.description}")
+print()
+```
+
+Next, find **list_resources()** and **read_resource()**. List and read methods
+return lists directly in FastMCP 4:
 
 ```python
 resources = await client.list_resources()
-contents = await client.read_resource("travel://destinations")
+print("Resources:", [str(resource.uri) for resource in resources])
+catalog = await client.read_resource("travel://destinations")
+print(catalog[0].text)
+print()
+```
+
+Find **list_prompts()** immediately below the resource section:
+
+```python
 prompts = await client.list_prompts()
+print("Prompts:", [prompt.name for prompt in prompts])
+prompt = await client.get_prompt(
+    "plan_a_trip", {"city": "Kochi", "nights": "4"}
+)
+print(json.dumps(prompt.messages[0].content.text, indent=2))
 ```
 
 **call_tool()** raises on a tool error by default. Use **raise_on_error=False**
-only when the caller is prepared to inspect the error and recover:
+only when the caller is prepared to inspect the error and recover. Find the
+Atlantis call and its **oops** result:
 
 ```python
-result = await client.call_tool(
-    "get_weather",
-    {"city": "Atlantis"},
-    raise_on_error=False,
+oops = await client.call_tool(
+    "get_weather", {"city": "Atlantis"}, raise_on_error=False
 )
+print("get_weather('Atlantis')")
+print("  is_error:", oops.is_error)
+print("  text    :", oops.content[0].text)
+print()
 ```
 
-successful typed tools provide **structured_content**. FastMCP wraps a Python
-return value under **result**, so a flight search has this shape:
+Successful typed tools provide **structured_content**. Find the earlier Pune
+call, which prints both the structured object and its text representation:
 
 ```python
-result = await client.call_tool(
-    "search_flights",
-    {"origin": "Bengaluru", "destination": "Kochi", "max_results": 1},
-)
-flights = result.structured_content["result"]
-first_flight = flights[0]
+weather = await client.call_tool("get_weather", {"city": "Pune"})
+print("get_weather('Pune')")
+print("  structured:", weather.structured_content)
+print("  text      :", weather.content[0].text)
+print()
 ```
 
 use the structured object for application logic. Text content remains useful
@@ -443,18 +484,27 @@ generic CPU variant so the image does not depend on an optional accelerator.
 It rejects unknown, non-tool-capable, or uncached models. If needed, it loads
 the cached model and returns its native chat client.
 
-The image builder performed the download earlier. Attendee code only does:
+The image builder performed the download earlier. Open
+[src/solution/agent_raw.py](src/solution/agent_raw.py) and find the start of
+**run()**. It uses an injected client for tests or obtains the cached model's client:
 
 ```python
-local_model = get_local_model()
-llm = local_model.client
+llm = chat_client
+if llm is None:
+    llm = get_local_model().client
+llm.settings.tool_choice = {"type": "required"}
 ```
 
 the Foundry Local chat call is synchronous, while the MCP client is asynchronous.
-The agent uses **asyncio.to_thread** so inference does not block the event loop:
+Inside the turn loop's **try** block, find **asyncio.to_thread**. It keeps inference
+from blocking the event loop:
 
 ```python
-response = await asyncio.to_thread(llm.complete_chat, messages, tools)
+response = await asyncio.to_thread(
+    llm.complete_chat,
+    messages,
+    tools,
+)
 ```
 
 no local HTTP endpoint is required.
@@ -473,6 +523,11 @@ deliberately small:
 
 ```python
 def mcp_tools_to_openai(tools) -> list[dict]:
+    """Translate MCP tool definitions into OpenAI `tools` entries.
+
+    This is the only real 'glue' in the whole loop. Python exposes
+    `input_schema`; the JSON field on the wire remains `inputSchema`.
+    """
     return [
         {
             "type": "function",
@@ -531,12 +586,13 @@ calls **list_destinations**, or explains the supported set.
 Open [src/solution/agent_raw.py](src/solution/agent_raw.py) and find these three
 boundaries:
 
-1. **Schema TODO:** Identify the one property that moves an MCP input schema
+1. **Schema check:** Identify the one property that moves an MCP input schema
     into the model's function definition.
-2. **Result TODO:** Identify where successful structured results and text errors
+2. **Result check:** Identify where successful structured results and text errors
     take different paths.
-3. **Safety TODO:** Change **MAX_TURNS** to **2**, predict the failure message for a
-    model that never stops, then restore it to **6**.
+3. **Safety check:** Find **MAX_TURNS** and the return statement after the loop.
+    Predict what would happen if the limit were **2** and the model never stopped.
+    Leave the code unchanged at **6**.
 
 Run the deterministic checks after inspecting the loop:
 
