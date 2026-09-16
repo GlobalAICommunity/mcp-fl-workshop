@@ -24,15 +24,17 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+import time
 from pathlib import Path
 from collections.abc import Callable
 
 from fastmcp import Client
+from foundry_local_sdk.exception import FoundryLocalException
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from mcp_client import server_transport  # noqa: E402
-from model_config import describe, get_local_model  # noqa: E402
+from model_config import ConfigError, describe, get_local_model  # noqa: E402
 
 MAX_TURNS = 6
 
@@ -111,12 +113,22 @@ async def run(
         ]
         first_flight: dict | None = None
 
-        for _ in range(MAX_TURNS):
-            response = await asyncio.to_thread(
-                llm.complete_chat,
-                messages,
-                tools,
-            )
+        for turn in range(1, MAX_TURNS + 1):
+            started = time.monotonic()
+            try:
+                response = await asyncio.to_thread(
+                    llm.complete_chat,
+                    messages,
+                    tools,
+                )
+            except FoundryLocalException as exc:
+                elapsed = time.monotonic() - started
+                raise ConfigError(
+                    f"Foundry Local completion failed on turn {turn} after "
+                    f"{elapsed:.1f}s: {exc}. No automatic retry was attempted. "
+                    "Check the Foundry Local logs and VM CPU/memory usage; "
+                    "the SDK error alone does not identify the cause."
+                ) from exc
             reply = response.choices[0].message
 
             # Preserve structured calls, but omit the duplicate raw <tool_call>
@@ -210,7 +222,11 @@ async def main() -> None:
     local_model = get_local_model()
     print(f"[{describe(local_model)}]")
     print(f"Q: {question}\n")
-    answer = await run(question)
+    try:
+        answer = await run(question)
+    except ConfigError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
     print(f"\nA: {answer}")
 
 
