@@ -308,6 +308,36 @@ Start the browser:
 Open <http://127.0.0.1:7932>, submit `What is the weather in Pune?`, confirm a
 `get_weather` label and grounded answer, then stop Uvicorn with `Ctrl+C`.
 
+### If native inference is cancelled
+
+Repeated cancellation near 120 seconds suggests a deadline, but does not
+identify its source. A successful tool call followed by a failed completion
+is not a script-permission or missing-model error. Capture native debug logs
+and test a smaller output budget in the same PowerShell session:
+
+```powershell
+$env:MCP_WORKSHOP_LOG_DIR = "$env:TEMP\MCP-Workshop-Logs"
+$env:MCP_WORKSHOP_MAX_TOKENS = '128'
+.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
+Get-ChildItem -LiteralPath $env:MCP_WORKSHOP_LOG_DIR -File -Recurse |
+	ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 80 }
+```
+
+The default output limit is 256 tokens per completion. The override is a
+diagnostic experiment, not a timeout extension or a confirmed cancellation
+fix. A smaller budget can truncate tool arguments or omit requested content.
+Check both the flight facts and weather-grounded packing advice; an incomplete
+answer does not pass acceptance. Record elapsed time and CPU/memory usage on
+the failing VM. Debug logs may contain prompts and tool results; review them
+before sharing and remove diagnostic logs before sealing the image.
+
+Restore defaults after the experiment:
+
+```powershell
+Remove-Item Env:MCP_WORKSHOP_MAX_TOKENS -ErrorAction SilentlyContinue
+Remove-Item Env:MCP_WORKSHOP_LOG_DIR -ErrorAction SilentlyContinue
+```
+
 ## 6. Perform offline acceptance
 
 Disconnect networking at the hypervisor or VM settings. Do not rely only on an
