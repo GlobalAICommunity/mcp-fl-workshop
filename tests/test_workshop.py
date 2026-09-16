@@ -4,15 +4,18 @@ import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from fastmcp import Client
 from fastmcp.client.elicitation import ElicitResult
+from foundry_local_sdk.exception import FoundryLocalException
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src" / "solution"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from agent_raw import MAX_TURNS, run  # noqa: E402
+from model_config import ConfigError  # noqa: E402
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
 
@@ -56,6 +59,34 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    async def test_completion_cancellation_does_not_replay_tool(self) -> None:
+        chat_client = RepeatingChatClient()
+        first_response = chat_client.complete_chat([], [])
+        failure = FoundryLocalException(
+            "Error during chat completion: Operation was cancelled"
+        )
+        tool_calls = []
+
+        with patch.object(
+            chat_client, "complete_chat", side_effect=[first_response, failure]
+        ) as complete_chat:
+            with self.assertRaisesRegex(
+                ConfigError, r"turn 2 after .*s: .*Operation was cancelled"
+            ) as caught:
+                await run(
+                    "Find a flight",
+                    chat_client=chat_client,
+                    mcp_server=travel_server,
+                    on_tool_call=lambda name, args: tool_calls.append((name, args)),
+                )
+
+        self.assertIs(caught.exception.__cause__, failure)
+        self.assertEqual(complete_chat.call_count, 2)
+        self.assertEqual(tool_calls, [("list_destinations", {})])
+        messages = complete_chat.call_args.args[0]
+        self.assertEqual(messages[-1]["role"], "tool")
+        self.assertEqual(messages[-1]["tool_call_id"], "call-1")
+
     async def test_discovery_and_structured_flight_output(self) -> None:
         async with Client(travel_server) as client:
             tools = await client.list_tools()
