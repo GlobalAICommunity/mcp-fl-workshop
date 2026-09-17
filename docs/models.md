@@ -31,8 +31,9 @@ boundary.
 
 ## Alias versus model ID
 
-`qwen3.5-9b` is an alias. Foundry Local maps it to concrete model variants and
-automatically selects the best compatible execution provider for the VM.
+`qwen3.5-9b` is an alias. Foundry Local maps it to concrete model variants. The
+workshop explicitly selects the highest-priority GPU variant so a cached CPU
+variant cannot silently take precedence.
 
 The selected concrete ID is printed by the preparation script and by
 `model_config.describe()`.
@@ -41,7 +42,7 @@ The selected concrete ID is printed by the preparation script and by
 
 ### Image builder, online
 
-The image builder downloads the hardware-optimized variant selected by the SDK:
+The image builder downloads the GPU variant exposed by the SDK catalog:
 
 ```powershell
 .\workshop.ps1 prepare-vm
@@ -57,8 +58,9 @@ The attendee only verifies and loads existing assets:
 .\workshop.ps1 check
 ```
 
-`get_local_model()` fails with a clear message if the alias is unknown, lacks
-tool support, or is not cached. It never silently downloads a missing model.
+`get_local_model()` fails with a clear message if the alias is unknown, has no
+GPU variant, lacks tool support, or is not cached. It never silently downloads
+a missing model or falls back to CPU.
 
 ## Readiness criteria
 

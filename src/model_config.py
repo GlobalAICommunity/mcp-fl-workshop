@@ -76,6 +76,32 @@ def complete_smoke_test(client, messages: list[dict], tools: list[dict]):
     raise AssertionError("unreachable")
 
 
+def select_gpu_variant(model) -> None:
+    """Select the highest-priority GPU variant or report what the catalog offers."""
+    variants = list(model.variants)
+    for variant in variants:
+        runtime = variant.info.runtime
+        device_type = getattr(runtime, "device_type", None)
+        if getattr(device_type, "value", device_type) == "GPU":
+            model.select_variant(variant)
+            return
+
+    offered = []
+    for variant in variants:
+        runtime = variant.info.runtime
+        device_type = getattr(runtime, "device_type", "unknown")
+        provider = getattr(runtime, "execution_provider", "unknown")
+        offered.append(
+            f"{variant.id} [{getattr(device_type, 'value', device_type)}/{provider}]"
+        )
+    details = ", ".join(offered) or "none"
+    raise ConfigError(
+        f"Foundry Local has no GPU variant for {model.alias!r}. "
+        f"Available variants: {details}. Check that the VM GPU and its execution "
+        "provider support this model before building the workshop image."
+    )
+
+
 def get_local_model() -> LocalModel:
     """Load the pre-cached Foundry Local model and return its chat client."""
     from foundry_local_sdk import FoundryLocalManager
@@ -99,6 +125,8 @@ def get_local_model() -> LocalModel:
             f"Foundry Local does not know model alias {alias!r}. "
             "The facilitator must rebuild the VM with scripts/prepare_vm.py."
         )
+    if alias == DEFAULT_MODEL:
+        select_gpu_variant(model)
     if not model.supports_tool_calling:
         raise ConfigError(f"Foundry Local model {alias!r} does not support tool calling.")
     if not model.is_cached:

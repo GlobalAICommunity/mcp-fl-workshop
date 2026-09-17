@@ -24,7 +24,7 @@ with FastMCP 4.0.0 and Foundry Local. Weather, forecasts, destinations, and INR
 flight fares are deterministic lab data, not live booking information.
 
 The repository, Python environment, Foundry Local runtime, and tool-capable
-hardware-optimized variant of `qwen3.5-9b` are already installed in the workshop VM.
+GPU variant of `qwen3.5-9b` are already installed in the workshop VM.
 Every learner exercise runs without a cloud account, API key, download, or
 network connection.
 

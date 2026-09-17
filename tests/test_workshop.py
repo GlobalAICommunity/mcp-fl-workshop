@@ -22,6 +22,7 @@ from model_config import (  # noqa: E402
     ConfigError,
     complete_smoke_test,
     get_local_model,
+    select_gpu_variant,
 )
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
@@ -66,6 +67,56 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    def test_selects_gpu_variant_even_when_cpu_variant_is_cached(self) -> None:
+        cpu = SimpleNamespace(
+            id="qwen3.5-9b-generic-cpu:3",
+            info=SimpleNamespace(
+                runtime=SimpleNamespace(
+                    device_type="CPU", execution_provider="CPUExecutionProvider"
+                )
+            ),
+        )
+        gpu = SimpleNamespace(
+            id="qwen3.5-9b-webgpu:3",
+            info=SimpleNamespace(
+                runtime=SimpleNamespace(
+                    device_type="GPU", execution_provider="WebGpuExecutionProvider"
+                )
+            ),
+        )
+        model = SimpleNamespace(
+            alias=DEFAULT_MODEL,
+            variants=[cpu, gpu],
+            select_variant=unittest.mock.Mock(),
+        )
+
+        select_gpu_variant(model)
+
+        model.select_variant.assert_called_once_with(gpu)
+
+    def test_rejects_cpu_fallback_and_lists_catalog_variants(self) -> None:
+        cpu = SimpleNamespace(
+            id="qwen3.5-9b-generic-cpu:3",
+            info=SimpleNamespace(
+                runtime=SimpleNamespace(
+                    device_type="CPU", execution_provider="CPUExecutionProvider"
+                )
+            ),
+        )
+        model = SimpleNamespace(
+            alias=DEFAULT_MODEL,
+            variants=[cpu],
+            select_variant=unittest.mock.Mock(),
+        )
+
+        with self.assertRaisesRegex(
+            ConfigError,
+            r"no GPU variant.*qwen3\.5-9b-generic-cpu:3.*CPUExecutionProvider",
+        ):
+            select_gpu_variant(model)
+
+        model.select_variant.assert_not_called()
+
     def test_prepare_retries_first_inference_cancellation_once(self) -> None:
         client = SimpleNamespace(complete_chat=unittest.mock.Mock())
         cancellation = FoundryLocalException(
@@ -96,9 +147,20 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
                 os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
             ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
                 model = manager.instance.catalog.get_model.return_value
+                gpu = SimpleNamespace(
+                    id="qwen3.5-9b-webgpu:3",
+                    info=SimpleNamespace(
+                        runtime=SimpleNamespace(
+                            device_type="GPU",
+                            execution_provider="WebGpuExecutionProvider",
+                        )
+                    ),
+                )
+                model.variants = [gpu]
                 local_model = get_local_model()
                 self.assertEqual(local_model.client.settings.max_tokens, expected)
                 manager.instance.catalog.get_model.assert_called_once_with(DEFAULT_MODEL)
+                model.select_variant.assert_called_once_with(gpu)
                 model.load.assert_not_called()
 
     def test_model_output_budget_rejects_invalid_values(self) -> None:

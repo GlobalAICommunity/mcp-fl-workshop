@@ -211,7 +211,7 @@ Expected versions:
 Do not install an unpinned replacement immediately before an event. Update and
 accept a new workshop release as a separate change.
 
-## 4. Cache the hardware-optimized model
+## 4. Cache the GPU model
 
 Still online, run:
 
@@ -224,7 +224,7 @@ The preparation script:
 1. initializes the Foundry Local manager
 2. discovers and registers execution providers available on the VM
 3. resolves `qwen3.5-9b` through the refreshed catalog
-4. lets Foundry Local select the best compatible execution provider
+4. explicitly selects the highest-priority GPU variant and rejects CPU fallback
 5. verifies tool-calling support
 6. downloads that concrete model if absent
 7. loads it and forces a `get_weather` tool request

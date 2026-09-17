@@ -14,7 +14,7 @@ The tested stack is:
 
 No cloud account, API key, package install, model download, or event Wi-Fi is
 required. The facilitator prepares `.venv`, the Foundry Local runtime, and the
-hardware-optimized model cache before distributing the VM image.
+GPU model cache before distributing the VM image.
 
 ## Start here
 

@@ -500,10 +500,10 @@ model call: MCP is working before any agent behavior is added.
 ### Part B: Connect the Local Model
 
 [src/model_config.py](src/model_config.py) asks the Foundry Local singleton for
-the hardware-independent alias **qwen3.5-9b**, then lets Foundry Local select
-the best compatible variant for the VM hardware.
-It rejects unknown, non-tool-capable, or uncached models. If needed, it loads
-the cached model and returns its native chat client.
+the hardware-independent alias **qwen3.5-9b**, then explicitly selects the
+highest-priority GPU variant exposed by the catalog.
+It rejects unknown, CPU-only, non-tool-capable, or uncached models. If needed,
+it loads the cached model and returns its native chat client.
 
 The image builder performed the download earlier. Open
 [src/solution/agent_raw.py](src/solution/agent_raw.py) and find the start of

@@ -8,7 +8,7 @@ estimatedMinutes: 5
 ## Start from the VM, not an installer
 
 The workshop VM already contains the repository, Python 3.11 or newer, `.venv`,
-FastMCP 4.0.0, Foundry Local SDK 1.2.4, and the cached hardware-optimized variant
+FastMCP 4.0.0, Foundry Local SDK 1.2.4, and the cached GPU variant
 of model alias `qwen3.5-9b`.
 
 Open the repository in VS Code and create a PowerShell terminal. Confirm the

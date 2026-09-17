@@ -20,8 +20,10 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from model_config import (  # noqa: E402
     DEFAULT_MODEL,
+    ConfigError,
     complete_smoke_test,
     get_foundry_configuration,
+    select_gpu_variant,
 )
 
 
@@ -62,11 +64,21 @@ def main() -> int:
     if model is None:
         print(f"Unknown Foundry Local model alias: {args.model}", file=sys.stderr)
         return 1
+    if args.model == DEFAULT_MODEL:
+        try:
+            select_gpu_variant(model)
+        except ConfigError as exc:
+            print(exc, file=sys.stderr)
+            return 1
     if not model.supports_tool_calling:
         print(f"Model {args.model} does not support tool calling.", file=sys.stderr)
         return 1
 
-    print(f"Selected hardware-optimized model {model.alias} -> {model.id}")
+    runtime = model.info.runtime
+    print(
+        f"Selected model {model.alias} -> {model.id} "
+        f"({runtime.device_type.value}/{runtime.execution_provider})"
+    )
     if not model.is_cached:
         model.download(progress(f"Downloading {model.alias}"))
         print()

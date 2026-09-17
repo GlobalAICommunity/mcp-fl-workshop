@@ -136,9 +136,10 @@ server port.
 **Why `qwen3.5-9b` with hardware acceleration?**
 
 The upgraded workshop VM has enough GPU capacity for this larger tool-calling
-model. Foundry Local automatically selects the best compatible variant for the
-machine, so image preparation and attendee validation must run on the same GPU
-configuration. Image acceptance, not catalog metadata alone, is the final proof.
+model. The workshop selects the highest-priority GPU variant exposed by Foundry
+Local and rejects CPU fallback, so image preparation and attendee validation
+must run on the same GPU configuration. Image acceptance, not catalog metadata
+alone, is the final proof.
 
 **Is a local model automatically secure?**
 
