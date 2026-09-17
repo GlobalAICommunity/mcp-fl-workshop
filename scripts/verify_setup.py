@@ -184,7 +184,8 @@ def check_local_model() -> None:
         }
     ]
     try:
-        response = local_model.client.complete_chat(
+        response = mc.complete_smoke_test(
+            local_model.client,
             [{"role": "user", "content": "Use get_weather for Pune."}], tools
         )
         calls = response.choices[0].message.tool_calls or []

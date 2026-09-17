@@ -41,9 +41,44 @@ def get_model_alias() -> str:
     return os.getenv("MCP_WORKSHOP_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
 
 
+def get_foundry_configuration():
+    """Build the shared Foundry Local SDK configuration."""
+    from foundry_local_sdk import Configuration
+
+    config = Configuration(app_name="mcp-fastmcp-workshop")
+    log_dir = os.getenv("MCP_WORKSHOP_LOG_DIR", "").strip()
+    if log_dir:
+        from foundry_local_sdk.logging_helper import LogLevel
+
+        logs_path = Path(log_dir).expanduser().resolve()
+        logs_path.mkdir(parents=True, exist_ok=True)
+        config.logs_dir = str(logs_path)
+        config.log_level = LogLevel.DEBUG
+        print(f"Foundry Local debug logs: {logs_path}", file=sys.stderr)
+    return config
+
+
+def complete_smoke_test(client, messages: list[dict], tools: list[dict]):
+    """Retry one transient cancellation for an idempotent model smoke test."""
+    from foundry_local_sdk.exception import FoundryLocalException
+
+    for attempt in range(2):
+        try:
+            return client.complete_chat(messages, tools)
+        except FoundryLocalException as exc:
+            cancelled = "operation was cancelled" in str(exc).lower()
+            if not cancelled or attempt == 1:
+                raise
+            print(
+                "First inference was cancelled; retrying the idempotent smoke test once.",
+                file=sys.stderr,
+            )
+    raise AssertionError("unreachable")
+
+
 def get_local_model() -> LocalModel:
     """Load the pre-cached Foundry Local model and return its chat client."""
-    from foundry_local_sdk import Configuration, FoundryLocalManager
+    from foundry_local_sdk import FoundryLocalManager
 
     token_setting = os.getenv("MCP_WORKSHOP_MAX_TOKENS", "").strip() or "256"
     try:
@@ -54,17 +89,7 @@ def get_local_model() -> LocalModel:
         raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.")
 
     if FoundryLocalManager.instance is None:
-        config = Configuration(app_name="mcp-fastmcp-workshop")
-        log_dir = os.getenv("MCP_WORKSHOP_LOG_DIR", "").strip()
-        if log_dir:
-            from foundry_local_sdk.logging_helper import LogLevel
-
-            logs_path = Path(log_dir).expanduser().resolve()
-            logs_path.mkdir(parents=True, exist_ok=True)
-            config.logs_dir = str(logs_path)
-            config.log_level = LogLevel.DEBUG
-            print(f"Foundry Local debug logs: {logs_path}", file=sys.stderr)
-        FoundryLocalManager.initialize(config)
+        FoundryLocalManager.initialize(get_foundry_configuration())
 
     manager = FoundryLocalManager.instance
     alias = get_model_alias()

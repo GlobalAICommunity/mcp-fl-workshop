@@ -9,14 +9,20 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
-from foundry_local_sdk import Configuration, FoundryLocalManager
+from foundry_local_sdk import FoundryLocalManager
+from foundry_local_sdk.exception import FoundryLocalException
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from model_config import DEFAULT_MODEL  # noqa: E402
+from model_config import (  # noqa: E402
+    DEFAULT_MODEL,
+    complete_smoke_test,
+    get_foundry_configuration,
+)
 
 
 def progress(label: str):
@@ -33,8 +39,24 @@ def main() -> int:
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Foundry Local model alias")
     args = parser.parse_args()
 
-    FoundryLocalManager.initialize(Configuration(app_name="mcp-fastmcp-workshop"))
+    FoundryLocalManager.initialize(get_foundry_configuration())
     manager = FoundryLocalManager.instance
+
+    execution_providers = manager.discover_eps()
+    missing_providers = [ep.name for ep in execution_providers if not ep.is_registered]
+    if missing_providers:
+        print(f"Registering execution providers: {', '.join(missing_providers)}")
+        result = manager.download_and_register_eps(
+            missing_providers,
+            lambda name, percent: print(
+                f"\rRegistering {name}: {percent:5.1f}%", end="", flush=True
+            ),
+        )
+        print()
+        if not result.success or result.failed_eps:
+            failed = ", ".join(result.failed_eps) or result.status
+            print(f"Execution provider registration failed: {failed}", file=sys.stderr)
+            return 1
 
     model = manager.catalog.get_model(args.model)
     if model is None:
@@ -73,9 +95,22 @@ def main() -> int:
             },
         }
     ]
-    response = client.complete_chat(
-        [{"role": "user", "content": "Use get_weather for Pune."}], tools
-    )
+    messages = [{"role": "user", "content": "Use get_weather for Pune."}]
+    started = time.monotonic()
+    try:
+        response = complete_smoke_test(client, messages, tools)
+    except FoundryLocalException as exc:
+        elapsed = time.monotonic() - started
+        print(
+            f"Tool-calling smoke test failed for {model.id} after {elapsed:.1f}s: {exc}",
+            file=sys.stderr,
+        )
+        print(
+            "Check available GPU memory and rerun with "
+            "$env:MCP_WORKSHOP_LOG_DIR='.\\foundry-local-logs' for native logs.",
+            file=sys.stderr,
+        )
+        return 1
     calls = response.choices[0].message.tool_calls or []
     if not calls or calls[0].function.name != "get_weather":
         print("Model loaded but did not produce the required tool call.", file=sys.stderr)

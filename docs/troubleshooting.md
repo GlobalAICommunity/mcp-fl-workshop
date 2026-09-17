@@ -80,6 +80,26 @@ sufficient for the offline workshop path.
 If preparation still fails, keep the full traceback and reject the image. Do
 not fall back to a hosted endpoint during an offline event.
 
+## Foundry Local reports Operation was cancelled
+
+The preparation and readiness smoke tests retry one first-inference cancellation
+because shader and execution-provider initialization can transiently cancel the
+first request. They do not retry normal agent turns, where replaying a tool
+request could repeat an action.
+
+If the retry also fails, close other GPU workloads and rerun preparation while
+online with native logging enabled:
+
+```powershell
+$env:MCP_WORKSHOP_LOG_DIR = '.\foundry-local-logs'
+.\workshop.ps1 prepare-vm
+```
+
+Record the concrete model ID printed by the script and inspect the generated
+logs. A persistent cancellation means the selected `qwen3.5-9b` variant has not
+passed acceptance on that VM; verify execution-provider registration, GPU driver
+availability, and free GPU memory before sealing the image.
+
 ## The model is cached but emits no tool call
 
 The full preflight exposes only `get_weather` and sets `tool_choice` to

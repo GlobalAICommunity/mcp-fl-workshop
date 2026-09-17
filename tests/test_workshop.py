@@ -17,7 +17,12 @@ sys.path.insert(0, str(REPO_ROOT / "src" / "solution"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from agent_raw import MAX_TURNS, run  # noqa: E402
-from model_config import DEFAULT_MODEL, ConfigError, get_local_model  # noqa: E402
+from model_config import (  # noqa: E402
+    DEFAULT_MODEL,
+    ConfigError,
+    complete_smoke_test,
+    get_local_model,
+)
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
 
@@ -61,6 +66,30 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    def test_prepare_retries_first_inference_cancellation_once(self) -> None:
+        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
+        cancellation = FoundryLocalException(
+            "Error during chat completion: Operation was cancelled"
+        )
+        expected = SimpleNamespace()
+        client.complete_chat.side_effect = [cancellation, expected]
+
+        response = complete_smoke_test(client, [{"role": "user"}], [])
+
+        self.assertIs(response, expected)
+        self.assertEqual(client.complete_chat.call_count, 2)
+
+    def test_prepare_does_not_retry_other_sdk_failures(self) -> None:
+        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
+        failure = FoundryLocalException("model failed")
+        client.complete_chat.side_effect = failure
+
+        with self.assertRaises(FoundryLocalException) as caught:
+            complete_smoke_test(client, [{"role": "user"}], [])
+
+        self.assertIs(caught.exception, failure)
+        client.complete_chat.assert_called_once()
+
     def test_model_output_budget(self) -> None:
         for value, expected in (("", 256), ("128", 128), (" 64 ", 64)):
             with self.subTest(value=value), patch.dict(
