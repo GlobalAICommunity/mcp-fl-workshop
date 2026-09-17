@@ -12,7 +12,7 @@ questions:
       - id: pinned-packages
         text: The pinned FastMCP and Foundry Local packages import from the workshop environment
       - id: cached-model
-        text: The selected generic CPU model is already cached for the attendee account
+        text: The hardware-selected model variant is already cached for the attendee account
       - id: real-tool-call
         text: The local model emits the required get_weather tool call
       - id: cloud-login

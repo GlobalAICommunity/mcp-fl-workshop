@@ -1,8 +1,7 @@
 # Foundry Local model
 
 The workshop has one supported runtime path: Foundry Local with cached alias
-`qwen3.5-0.8b`. It is the smallest catalog candidate that passed both the
-required tool-call smoke test and the complete multi-tool workshop scenario.
+`qwen3.5-9b`. The GPU-enabled VM has capacity for this larger tool-calling model.
 
 The direct Python dependency is pinned in `requirements-server.txt`:
 
@@ -16,7 +15,7 @@ the accepted Windows VM image.
 ## How the model is used
 
 `src/model_config.py` initializes `FoundryLocalManager` once, resolves the alias
-through the catalog, selects the generic `CPUExecutionProvider` variant, checks
+through the catalog, lets the SDK select the best hardware variant, checks
 `supports_tool_calling` and `is_cached`, loads the model if needed, and returns
 its native chat client.
 
@@ -32,10 +31,8 @@ boundary.
 
 ## Alias versus model ID
 
-`qwen3.5-0.8b` is an alias. Foundry Local maps it to concrete model variants.
-Workshop configuration uses the alias, then deliberately selects the generic
-CPU model ID so a sealed image does not depend on process-local registration of
-an optional GPU or NPU provider.
+`qwen3.5-9b` is an alias. Foundry Local maps it to concrete model variants and
+automatically selects the best compatible execution provider for the VM.
 
 The selected concrete ID is printed by the preparation script and by
 `model_config.describe()`.
@@ -44,7 +41,7 @@ The selected concrete ID is printed by the preparation script and by
 
 ### Image builder, online
 
-The image builder downloads the selected model's portable CPU variant:
+The image builder downloads the hardware-optimized variant selected by the SDK:
 
 ```powershell
 .\workshop.ps1 prepare-vm
@@ -70,7 +67,7 @@ hardware:
 
 1. the catalog resolves the alias
 2. the model reports tool-calling support
-3. the generic CPU variant is cached under the attendee account
+3. the hardware-selected variant is cached under the attendee account
 4. the model loads with networking disabled
 5. a forced `get_weather` request produces a structured tool call
 6. the complete agent answers a multi-tool India travel question
@@ -99,11 +96,6 @@ arrive, but still test a cold restored VM before distributing the image. Exact
 generation speed depends on the VM CPU, memory, execution provider, and host
 contention, so measure on the same class of hardware used in the room.
 
-Release validation compared the practical sub-2B candidates on an Intel Core
-i7-1185G7 with four cores, eight logical processors, and 64 GB RAM. The same
-cold-process three-tool prompt took about 162 seconds with `qwen3.5-0.8b` and
-309 seconds with `qwen3.5-2b-text` at a 512-token limit. The final 256-token
-configuration completed in about 131 seconds. `qwen3-0.6b` failed the required
-tool-call smoke test, while `qwen2.5-0.5b` repeated one tool until the turn limit.
-These measurements justify the default; they are comparative results, not a
-performance promise for other hardware.
+Record cold-load latency, generation speed, GPU memory use, and the complete
+multi-tool acceptance result for the final VM image. These measurements are
+specific to the event GPU and virtualization configuration.

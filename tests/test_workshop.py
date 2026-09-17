@@ -17,7 +17,7 @@ sys.path.insert(0, str(REPO_ROOT / "src" / "solution"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from agent_raw import MAX_TURNS, run  # noqa: E402
-from model_config import ConfigError, get_local_model  # noqa: E402
+from model_config import DEFAULT_MODEL, ConfigError, get_local_model  # noqa: E402
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
 
@@ -65,12 +65,11 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         for value, expected in (("", 256), ("128", 128), (" 64 ", 64)):
             with self.subTest(value=value), patch.dict(
                 os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
-            ), patch("foundry_local_sdk.FoundryLocalManager") as manager, patch(
-                "model_config.select_cpu_variant", side_effect=lambda model: model
-            ):
+            ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
                 model = manager.instance.catalog.get_model.return_value
                 local_model = get_local_model()
                 self.assertEqual(local_model.client.settings.max_tokens, expected)
+                manager.instance.catalog.get_model.assert_called_once_with(DEFAULT_MODEL)
                 model.load.assert_not_called()
 
     def test_model_output_budget_rejects_invalid_values(self) -> None:

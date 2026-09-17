@@ -41,8 +41,8 @@ errors and servers that do not publish structured output.
 
 ## Load only cached model assets
 
-`src/model_config.py` resolves `qwen3.5-0.8b` through the Foundry Local catalog,
-then selects its generic CPU variant for VM portability. It rejects unknown,
+`src/model_config.py` resolves `qwen3.5-9b` through the Foundry Local catalog,
+then lets the SDK select the best variant for the VM hardware. It rejects unknown,
 non-tool-capable, or uncached models before returning a native chat client:
 
 ```python

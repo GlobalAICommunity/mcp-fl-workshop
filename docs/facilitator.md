@@ -133,14 +133,12 @@ It keeps prompts, tool requests, and results on the VM and avoids accounts or
 network dependencies. The native SDK also avoids managing a separate model
 server port.
 
-**Why `qwen3.5-0.8b` on CPU?**
+**Why `qwen3.5-9b` with hardware acceleration?**
 
-The installed Foundry Local catalog marks the alias as CPU-capable and
-tool-calling. It was the smallest candidate that completed the workshop's
-required single-tool and multi-tool checks; smaller candidates failed one of
-those checks. Selecting the generic CPU variant avoids optional accelerator
-registration across cloned VM processes. Image acceptance, not catalog metadata
-alone, is the final proof.
+The upgraded workshop VM has enough GPU capacity for this larger tool-calling
+model. Foundry Local automatically selects the best compatible variant for the
+machine, so image preparation and attendee validation must run on the same GPU
+configuration. Image acceptance, not catalog metadata alone, is the final proof.
 
 **Is a local model automatically secure?**
 

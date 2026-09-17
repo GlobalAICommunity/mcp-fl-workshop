@@ -16,7 +16,7 @@ or the cached model. The check verifies these prerequisites; it does not create
 or install them.
 
 All checks must pass with networking disabled. The model check must load cached
-`qwen3.5-0.8b` and produce a `get_weather` tool request.
+`qwen3.5-9b` and produce a `get_weather` tool request.
 
 ## 1. Create the virtual environment first
 
@@ -73,10 +73,9 @@ the model in section 4.
 
 ## 2. Build a representative base image
 
-Use the same Windows edition, architecture, VM generation, CPU class, memory,
-and virtualization settings planned for the event. The workshop selects the
-generic CPU model variant for portability, but performance acceptance still
-needs representative event hardware.
+Use the same Windows edition, architecture, VM generation, GPU and CPU class,
+memory, and virtualization settings planned for the event. Foundry Local selects
+the best compatible model variant, so acceptance needs representative hardware.
 
 Install before sealing the image:
 
@@ -212,7 +211,7 @@ Expected versions:
 Do not install an unpinned replacement immediately before an event. Update and
 accept a new workshop release as a separate change.
 
-## 4. Cache the portable CPU model
+## 4. Cache the hardware-optimized model
 
 Still online, run:
 
@@ -223,8 +222,8 @@ Still online, run:
 The preparation script:
 
 1. initializes the Foundry Local manager
-2. resolves `qwen3.5-0.8b` through the catalog
-3. selects its generic `CPUExecutionProvider` variant
+2. resolves `qwen3.5-9b` through the catalog
+3. lets Foundry Local select the best compatible execution provider
 4. verifies tool-calling support
 5. downloads that concrete model if absent
 6. loads it and forces a `get_weather` tool request
@@ -374,11 +373,11 @@ Before taking the final snapshot or template:
 
 - close running Python, Uvicorn, and model processes
 - remove secrets, tokens, unrelated shell history, and temporary downloads
-- keep `.venv`, the Foundry Local runtime, and the generic CPU model cache
+- keep `.venv`, the Foundry Local runtime, and the hardware-selected model cache
 - keep the prepared attendee profile intact
 - verify trusted scripts are unblocked and the approved terminal setup works
 	after reboot; a process-only execution policy is not saved in the image
-- ensure `.env` is absent or contains only `MCP_WORKSHOP_MODEL=qwen3.5-0.8b`
+- ensure `.env` is absent or contains only `MCP_WORKSHOP_MODEL=qwen3.5-9b`
 - open VS Code at the repository root with a PowerShell 7 terminal profile
 - record the repository revision and image checksum
 
@@ -416,7 +415,7 @@ For each image release, record:
 | Python version | |
 | FastMCP version | `4.0.0` |
 | Foundry Local SDK | `1.2.4` |
-| Model alias and concrete ID | `qwen3.5-0.8b` / `qwen3.5-0.8b-generic-cpu:3` |
+| Model alias and concrete ID | `qwen3.5-9b` / record the ID printed by `prepare-vm` |
 | VM hardware profile | |
 | Online preparation date | |
 | Offline acceptance date and tester | |

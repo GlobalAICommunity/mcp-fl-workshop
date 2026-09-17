@@ -8,8 +8,8 @@ estimatedMinutes: 5
 ## Start from the VM, not an installer
 
 The workshop VM already contains the repository, Python 3.11 or newer, `.venv`,
-FastMCP 4.0.0, Foundry Local SDK 1.2.4, and the cached generic CPU variant of
-model alias `qwen3.5-0.8b`.
+FastMCP 4.0.0, Foundry Local SDK 1.2.4, and the cached hardware-optimized variant
+of model alias `qwen3.5-9b`.
 
 Open the repository in VS Code and create a PowerShell terminal. Confirm the
 current directory contains `workshop.ps1`, `docs`, and `src`:
@@ -50,7 +50,7 @@ the event.
 Three states are different:
 
 1. the SDK imports
-2. generic CPU model files exist in the attendee's cache
+2. the hardware-selected model files exist in the attendee's cache
 3. the runtime loads those files and the model emits a valid tool request
 
 Only the third state proves that the end-to-end agent exercise can work on this

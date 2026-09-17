@@ -1,7 +1,7 @@
 """Prepare a Windows VM image for the fully offline workshop.
 
 Run this once while the image builder still has internet access. It downloads
-the selected model's portable CPU variant and proves the model can emit an
+the model variant Foundry Local selects for this hardware and proves it can emit an
 OpenAI-compatible tool call. Learner setup never downloads.
 """
 
@@ -16,7 +16,7 @@ from foundry_local_sdk import Configuration, FoundryLocalManager
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from model_config import DEFAULT_MODEL, ConfigError, select_cpu_variant  # noqa: E402
+from model_config import DEFAULT_MODEL  # noqa: E402
 
 
 def progress(label: str):
@@ -40,16 +40,11 @@ def main() -> int:
     if model is None:
         print(f"Unknown Foundry Local model alias: {args.model}", file=sys.stderr)
         return 1
-    try:
-        model = select_cpu_variant(model)
-    except ConfigError as exc:
-        print(exc, file=sys.stderr)
-        return 1
     if not model.supports_tool_calling:
         print(f"Model {args.model} does not support tool calling.", file=sys.stderr)
         return 1
 
-    print(f"Selected portable CPU model {model.alias} -> {model.id}")
+    print(f"Selected hardware-optimized model {model.alias} -> {model.id}")
     if not model.is_cached:
         model.download(progress(f"Downloading {model.alias}"))
         print()

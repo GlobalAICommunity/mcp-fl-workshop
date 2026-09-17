@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3.5-0.8b"
+DEFAULT_MODEL = "qwen3.5-9b"
 
 
 class ConfigError(RuntimeError):
@@ -39,38 +39,6 @@ class LocalModel:
 def get_model_alias() -> str:
     """Return the hardware-independent model alias selected for the lab."""
     return os.getenv("MCP_WORKSHOP_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
-
-
-def select_cpu_variant(model):
-    """Select the smallest tool-capable generic CPU variant for portability."""
-    generic_cpu_variants = [
-        variant
-        for variant in model.variants
-        if variant.info.runtime is not None
-        and variant.info.runtime.execution_provider == "CPUExecutionProvider"
-        and "generic-cpu" in variant.id
-    ]
-    if not generic_cpu_variants:
-        raise ConfigError(
-            f"Foundry Local model {model.alias!r} has no generic CPU variant."
-        )
-    tool_capable_variants = [
-        variant for variant in generic_cpu_variants if variant.supports_tool_calling
-    ]
-    if not tool_capable_variants:
-        raise ConfigError(
-            f"Foundry Local model {model.alias!r} has no tool-capable generic CPU variant."
-        )
-    selected = min(
-        tool_capable_variants,
-        key=lambda variant: (
-            variant.info.file_size_mb is None,
-            variant.info.file_size_mb or 0,
-            variant.id,
-        ),
-    )
-    model.select_variant(selected)
-    return model
 
 
 def get_local_model() -> LocalModel:
@@ -106,7 +74,6 @@ def get_local_model() -> LocalModel:
             f"Foundry Local does not know model alias {alias!r}. "
             "The facilitator must rebuild the VM with scripts/prepare_vm.py."
         )
-    model = select_cpu_variant(model)
     if not model.supports_tool_calling:
         raise ConfigError(f"Foundry Local model {alias!r} does not support tool calling.")
     if not model.is_cached:

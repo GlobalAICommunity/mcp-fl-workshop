@@ -53,7 +53,7 @@ the check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in **.venv**.
 - The FastMCP server and protocol negotiation.
 - The browser application import.
-- A cached **qwen3.5-0.8b** model that can emit a tool call.
+- A cached **qwen3.5-9b** model that can emit a tool call.
 
 A ready image ends with output similar to:
 
@@ -62,7 +62,7 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
-[  ok  ] Foundry Local model - qwen3.5-0.8b loaded from cache and emitted get_weather
+[  ok  ] Foundry Local model - qwen3.5-9b loaded from cache and emitted get_weather
 
 All good - you are ready for the offline workshop.
 ```
@@ -500,8 +500,8 @@ model call: MCP is working before any agent behavior is added.
 ### Part B: Connect the Local Model
 
 [src/model_config.py](src/model_config.py) asks the Foundry Local singleton for
-the hardware-independent alias **qwen3.5-0.8b**, then explicitly selects its
-generic CPU variant so the image does not depend on an optional accelerator.
+the hardware-independent alias **qwen3.5-9b**, then lets Foundry Local select
+the best compatible variant for the VM hardware.
 It rejects unknown, non-tool-capable, or uncached models. If needed, it loads
 the cached model and returns its native chat client.
 

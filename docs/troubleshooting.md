@@ -70,12 +70,12 @@ Then rerun full acceptance under the same Windows account used by attendees.
 Model cache state may be user-scoped, so validating as an administrator does not
 prove that the attendee profile can load it.
 
-## Foundry Local cannot load the CPU model
+## Foundry Local cannot load the accelerated model
 
-Rerun `scripts/prepare_vm.py` while online. Confirm that the selected catalog
-alias has a `CPUExecutionProvider` variant and that preparation prints a concrete
-ID containing `generic-cpu`. A cache containing only a CUDA or NPU variant is not
-sufficient for the portable workshop path.
+Rerun `scripts/prepare_vm.py` while online on the same GPU configuration used by
+attendees. Confirm that preparation prints a concrete model ID and that the
+selected variant is cached. A variant prepared for different hardware is not
+sufficient for the offline workshop path.
 
 If preparation still fails, keep the full traceback and reject the image. Do
 not fall back to a hosted endpoint during an offline event.

@@ -104,8 +104,8 @@ without a cloud endpoint.
 
 ## Model alias
 
-A hardware-independent catalog name such as `qwen3.5-0.8b`. This workshop resolves
-the alias and explicitly selects its generic CPU variant for VM portability.
+A hardware-independent catalog name such as `qwen3.5-9b`. This workshop resolves
+the alias and lets Foundry Local select the best variant for the VM hardware.
 
 ## Prompt injection
 
