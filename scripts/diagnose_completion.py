@@ -63,9 +63,9 @@ def main() -> int:
     try:
         model = get_local_model()
         client = model.client
-        client.settings.tool_choice = {
-            "type": "required" if args.mode == "required" else "none"
-        }
+        client.settings.tool_choice = (
+            "required" if args.mode == "required" else "none"
+        )
         print(f"[{describe(model)}]", flush=True)
         scenario = "No tools or history" if args.mode == "baseline" else "Synthetic tool history"
         print(

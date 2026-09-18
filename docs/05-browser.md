@@ -51,13 +51,9 @@ Submit this question:
 
 `What is the weather in Pune?`
 
-The orange label shows which MCP tool the model requested. If time remains, try
-one slower extension:
-
-- `Find a flight from Bengaluru to Kochi and tell me what to pack.` usually
-  needs weather or forecast information plus a flight search.
-- `Can you plan a trip to Atlantis?` demonstrates a bounded failure rather than
-  invented travel data.
+The orange label shows which MCP tool the model requested. The answer is
+rendered from the typed MCP result, so its weather values should match the
+server exactly.
 
 Exact prose can vary, but tool results should remain deterministic for the same
 city and date.

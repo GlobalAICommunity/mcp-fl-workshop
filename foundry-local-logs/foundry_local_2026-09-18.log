@@ -1,0 +1,26 @@
+[2026-09-18 07:55:14.215] [info] Runtime versions: onnxruntime=1.28.0, onnxruntime-genai=0.15.2
+[2026-09-18 07:55:14.499] [info] WinML EP discovered: OpenVINOExecutionProvider (state: 1)
+[2026-09-18 07:55:14.500] [info] WinML EP discovered: NvTensorRTRTXExecutionProvider (state: 1)
+[2026-09-18 07:55:14.500] [info] WinML EP catalog: discovered 2 trusted provider(s)
+[2026-09-18 07:55:14.620] [info] [Telemetry] 1DS initialized; AppName=mcp-fastmcp-workshop AppVersion=3.14.2 Version=2.0.1 Os=Windows 10.0.26200 Arch=amd64
+[2026-09-18 07:55:14.621] [debug] [Telemetry] ProcessInfo AppName=mcp-fastmcp-workshop AppVersion=3.14.2 OsName=Windows OsVersion=10.0.26200 CpuArch=amd64 ProcessName=python.exe DeviceIdStatus=Corrupted CpuCount=8 TotalMemoryMB=64816
+[2026-09-18 07:55:14.621] [info] Created AzureModelCatalog. Cache directory: C:\Users\leestott/.mcp-fastmcp-workshop/cache/models
+[2026-09-18 07:55:14.621] [debug] [Telemetry] Action AppName=mcp-fastmcp-workshop UserAgent=foundry-local-core/2.0.1 CorrelationId=5ea803fa-6a86-4e01-8811-cd7399f926c8 Action=CoreInitialize Status=Success Direct=true TimeMs=0 ModelId=
+[2026-09-18 07:55:14.621] [info] Manager initialized successfully.
+[2026-09-18 07:55:14.622] [info] Getting catalog metadata and locally cached models.
+[2026-09-18 07:55:14.654] [info] Found 2 locally cached models.
+[2026-09-18 07:55:14.897] [info] Detected catalog region: 'westeurope'.
+[2026-09-18 07:55:14.897] [debug] GetEpDevices: ORT reports 1 EP device(s)
+[2026-09-18 07:55:14.897] [debug]   [0] ep=CPUExecutionProvider device=CPU (hw_type=0)
+[2026-09-18 07:55:15.967] [info] Populated model info for 48 models.
+[2026-09-18 07:55:15.986] [debug] Catalog 'https://ai.azure.com/api/centralus/ux/v1.0' populated with 48 model(s).
+[2026-09-18 07:55:15.987] [debug] loading model from C:\Users\leestott/.mcp-fastmcp-workshop/cache/models\Microsoft\qwen3.5-4b-generic-cpu-3\v3
+[2026-09-18 07:55:50.107] [info] model loaded successfully: qwen3.5-4b-generic-cpu:3
+[2026-09-18 07:55:50.108] [debug] Creating ChatSession for model: qwen3.5-4b-generic-cpu:3
+[2026-09-18 07:55:50.108] [debug] [Telemetry] Action AppName=mcp-fastmcp-workshop UserAgent=foundry-local-core/2.0.1 CorrelationId=2fe42d5c-6bfe-4769-9a21-5174a51c3fe2 Action=SessionCreate Status=Success Direct=true TimeMs=0 ModelId=qwen3.5-4b-generic-cpu:3
+[2026-09-18 07:56:17.777] [debug] [Telemetry] Action AppName=mcp-fastmcp-workshop UserAgent=foundry-local-core/2.0.1 CorrelationId=5b0d84a2-334a-4734-818d-e21d0cf9f0a4 Action=SessionProcessRequest Status=Success Direct=true TimeMs=27667 ModelId=qwen3.5-4b-generic-cpu:3
+[2026-09-18 07:56:17.780] [info] Shutdown requested
+[2026-09-18 07:56:17.780] [info] SessionManager: cancelling all sessions (0 active)
+[2026-09-18 07:56:17.780] [info] Shutdown: unloading 1 model(s)
+[2026-09-18 07:56:17.780] [info] unloading model: qwen3.5-4b-generic-cpu:3
+[2026-09-18 07:56:19.657] [info] Manager is being disposed.

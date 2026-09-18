@@ -15,8 +15,8 @@ repository download does not include the `.venv` Python virtual environment
 or the cached model. The check verifies these prerequisites; it does not create
 or install them.
 
-All checks must pass with networking disabled. The model check must load cached
-the CPU variant of `qwen3.5-4b` and produce a `get_weather` tool request.
+ All checks must pass with networking disabled. The model check must load cached
+ the CPU variant of `qwen2.5-1.5b` and produce a `get_weather` tool request.
 
 ## 1. Create the virtual environment first
 
@@ -222,17 +222,16 @@ Still online, run:
 The preparation script:
 
 1. initializes the Foundry Local manager
-2. resolves `qwen3.5-4b` through the catalog and selects its CPU variant
+ 2. resolves `qwen2.5-1.5b` through the catalog and selects its CPU variant
 3. explicitly selects the highest-priority CPU variant
 4. verifies tool-calling support
 5. downloads that concrete model if absent
-6. loads it, forces a `get_weather` request, and completes `final_answer` after
-	the tool result
+ 6. loads it and forces a structured `get_weather(Pune)` request
 
 Do not interrupt a download. The command must end with:
 
 ```text
-Two-turn agent smoke test passed: get_weather -> final_answer
+ Tool-calling smoke test passed: get_weather(Pune)
 VM model preparation complete. Run scripts/verify_setup.py with networking off.
 ```
 
@@ -282,7 +281,7 @@ PowerShell 7 session, run:
 .\workshop.ps1 test
 .\workshop.ps1 raw
 .\workshop.ps1 client
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
+ .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
 Alternatively, select PowerShell 7 explicitly for the readiness check:
@@ -319,15 +318,15 @@ report Foundry Local SDK 2.0.1.
 
 ### If native inference is cancelled
 
-Repeated cancellation near 120 seconds suggests a deadline, but does not
-identify its source. A successful tool call followed by a failed completion
-is not a script-permission or missing-model error. Capture native debug logs
+ Repeated cancellation near 120 seconds suggests a deadline, but does not
+ identify its source. A failed tool-selection completion is not a
+ script-permission or missing-model error. Capture native debug logs
 and test a smaller output budget in the same PowerShell session:
 
 ```powershell
 $env:MCP_WORKSHOP_LOG_DIR = "$env:TEMP\MCP-Workshop-Logs"
 $env:MCP_WORKSHOP_MAX_TOKENS = '64'
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
+ .\workshop.ps1 agent "What is the weather in Pune?"
 Get-ChildItem -LiteralPath $env:MCP_WORKSHOP_LOG_DIR -File -Recurse |
 	ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 80 }
 ```
@@ -336,8 +335,8 @@ The default output limit is 64 tokens per completion. On an older workshop
 checkout that still defaults to 256, set **MCP_WORKSHOP_MAX_TOKENS** to **64**
 before retrying. The override is not a timeout extension. A smaller budget can
 truncate tool arguments or omit requested content.
-Check both the flight facts and weather-grounded packing advice; an incomplete
-answer does not pass acceptance. Record elapsed time and CPU/memory usage on
+ Check that the answer contains the exact typed Pune weather values; an
+ incomplete answer does not pass acceptance. Record elapsed time and CPU/memory usage on
 the failing VM. Debug logs may contain prompts and tool results; review them
 before sharing and remove diagnostic logs before sealing the image.
 
@@ -361,7 +360,7 @@ if needed. Do not repeat package installation or model downloads. Run:
 ```powershell
 .\workshop.ps1 check
 .\workshop.ps1 raw tools/call '{"name":"get_weather","arguments":{"city":"Pune"}}'
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
+ .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
 Acceptance requires:
@@ -372,7 +371,7 @@ Acceptance requires:
 - four reference tools and a structured Pune result
 - browser app import success
 - cached model tool-call smoke test success
-- a complete multi-tool agent answer with fictional INR fares
+- one `get_weather(Pune)` call and the exact typed weather result
 - no network prompt, sign-in dialog, download, or credential request
 
 Run the browser smoke test offline as well if the image will be used for the
@@ -388,7 +387,7 @@ Before taking the final snapshot or template:
 - keep the prepared attendee profile intact
 - verify trusted scripts are unblocked and the approved terminal setup works
 	after reboot; a process-only execution policy is not saved in the image
-- ensure `.env` is absent or contains only `MCP_WORKSHOP_MODEL=qwen3.5-4b`
+- ensure `.env` is absent or contains only `MCP_WORKSHOP_MODEL=qwen2.5-1.5b`
 - open VS Code at the repository root with a PowerShell 7 terminal profile
 - record the repository revision and image checksum
 
@@ -426,7 +425,7 @@ For each image release, record:
 | Python version | |
 | FastMCP version | `4.0.0` |
 | Foundry Local SDK | `2.0.1` |
-| Model alias and concrete ID | `qwen3.5-4b` / record the ID printed by `prepare-vm` |
+| Model alias and concrete ID | `qwen2.5-1.5b` / record the ID printed by `prepare-vm` |
 | VM hardware profile | |
 | Online preparation date | |
 | Offline acceptance date and tester | |

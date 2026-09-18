@@ -105,15 +105,15 @@ class Flight(BaseModel):
 
 @mcp.tool
 def list_destinations() -> list[str]:
-    """List supported cities."""
+    """List valid city names after a city is missing, unknown, or unsupported."""
     return sorted(DESTINATIONS)
 
 
 @mcp.tool
 def get_weather(
-    city: Annotated[str, Field(description="Supported city name.")],
+    city: Annotated[str, Field(description="City requested by the user.")],
 ) -> Weather:
-    """Get today's weather."""
+    """Get current weather for one city; use get_forecast for packing advice."""
     key = _known_city(city)
     seed = _seed("weather", key, date.today().isoformat())
     return Weather(
@@ -126,13 +126,16 @@ def get_weather(
 
 @mcp.tool
 def get_forecast(
-    city: Annotated[str, Field(description="Supported city name.")],
+    city: Annotated[
+        str,
+        Field(description="Arrival city requested by the user."),
+    ],
     days: Annotated[int, Field(ge=1, le=7, description="Days ahead to forecast.")] = 3,
     units: Annotated[
         Literal["celsius", "fahrenheit"], Field(description="Temperature units.")
     ] = "celsius",
 ) -> list[ForecastDay]:
-    """Get a weather forecast."""
+    """Get a future forecast; use the arrival city when deciding what to pack."""
     key = _known_city(city)
     if not 1 <= days <= 7:
         raise ValueError("days must be between 1 and 7")
@@ -159,13 +162,13 @@ def get_forecast(
 
 @mcp.tool
 def search_flights(
-    origin: Annotated[str, Field(description="Supported departure city.")],
-    destination: Annotated[str, Field(description="Supported arrival city.")],
+    origin: Annotated[str, Field(description="Departure city requested by the user.")],
+    destination: Annotated[str, Field(description="Arrival city requested by the user.")],
     max_results: Annotated[
         int, Field(ge=1, le=5, description="Maximum number of flights to return.")
     ] = 1,
 ) -> list[Flight]:
-    """Search fictional flights."""
+    """Find fictional flights between two different supported cities."""
     origin_key = _known_city(origin)
     dest_key = _known_city(destination)
     if origin_key == dest_key:

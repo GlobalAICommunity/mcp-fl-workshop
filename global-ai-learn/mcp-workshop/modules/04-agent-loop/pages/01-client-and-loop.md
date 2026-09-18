@@ -41,7 +41,7 @@ errors and servers that do not publish structured output.
 
 ## Load only cached model assets
 
-`src/model_config.py` resolves `qwen3.5-4b` through the Foundry Local catalog,
+`src/model_config.py` resolves `qwen2.5-1.5b` through the Foundry Local catalog,
 then lets the SDK select the best variant for the VM hardware. It rejects unknown,
 non-tool-capable, or uncached models before returning a workshop adapter backed
 by a typed native `ChatSession`:
@@ -84,43 +84,27 @@ def mcp_tools_to_openai(tools) -> list[dict]:
 Open `src/solution/agent_raw.py` and follow this sequence:
 
 1. discover MCP tools and convert their schemas
-2. add the host-only `final_answer` function to the model's tool list
-3. set `tool_choice` to `required` and send messages and tools to Foundry Local
-4. preserve structured calls but omit duplicate raw `<tool_call>` markup
-5. return the answer if the model calls `final_answer` alone
-6. otherwise execute each travel tool with `raise_on_error=False`
-7. serialize successful `structured_content`, while preserving text errors
-8. append each result with the matching `tool_call_id`
-9. repeat until `final_answer` is called or `MAX_TURNS` is reached
+2. keep only tools relevant to the question
+3. set `tool_choice` to `required` and send the question and tools to Foundry Local
+4. read the structured tool call instead of duplicate raw markup
+5. execute the selected travel tool with `raise_on_error=False`
+6. render successful `structured_content` in the host
+7. preserve text errors and retry up to `MAX_TURNS`
 
 Foundry Local SDK 2.0.1 returns an OpenAI-compatible JSON response in
-required-tool mode. The workshop adapter translates it to the lesson's compact response shape.
-`final_answer` supplies a stopping signal without being forwarded to MCP.
-Keeping structured requests and matching call IDs preserves conversation
-meaning; removing their duplicate raw representation prevents repeated calls.
-For a flight answer, the host also checks for a returned flight number,
-departure, duration, INR price, and the fictional-fare disclosure. It inserts
-missing fields from the first structured flight result rather than paying for
-another slow inference turn. The turn cap bounds a confused or repeatedly
-failing model.
+required-tool mode. The workshop adapter translates it to the lesson's compact
+response shape. Host-side rendering keeps returned facts exact and avoids a
+second model completion, which makes the exercise responsive on a small CPU
+model. The turn cap bounds malformed requests and repeatedly failing tools.
 
 ## Run the local agent
-
-```powershell
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
-```
-
-You should see tool-call lines and a grounded answer. Flight fares are fictional
-and in INR. Model prose and call order can vary.
-
-Try a single-tool question:
 
 ```powershell
 .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
-Then ask for an unsupported city. The host sends actionable tool errors back to
-the model so it can correct the request or explain the supported set.
+You should see one `get_weather` call and a grounded answer containing the
+server's exact temperature, condition, and humidity values.
 
 ## Check three code boundaries
 

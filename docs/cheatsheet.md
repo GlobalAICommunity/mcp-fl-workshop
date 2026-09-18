@@ -111,23 +111,19 @@ Python uses `input_schema`; MCP JSON uses `inputSchema` on the wire.
 ```text
 discover tools
 repeat up to MAX_TURNS:
-    call Foundry Local with messages and tools
-    append the assistant's structured calls without duplicate raw markup
-    if the model calls final_answer: return its answer
-    for each tool call:
-        parse arguments
-        call it through FastMCP with raise_on_error=False
-        append the result with the matching tool_call_id
+    keep tools relevant to the question
+    call Foundry Local with the question and tools
+    parse the structured tool request
+    call it through FastMCP with raise_on_error=False
+    if successful: format structured_content and return
+    otherwise: preserve the text error and retry
 ```
 
-Set `tool_choice` to `{"type": "required"}` and include a host-only
-`final_answer(answer)` function alongside the MCP tools. Foundry Local SDK 2.0.1
-returns an OpenAI-compatible JSON response for `qwen3.5-4b`; the workshop
-adapter translates it to the compact response shape used by the agent. The host handles
-`final_answer` without forwarding it to MCP. For flight questions, it checks that the
-answer contains a returned flight number, departure, duration, INR price, and
-the fictional-fare disclosure. If any are absent, it inserts a deterministic
-summary from the first structured flight result without another model call.
+Set `tool_choice` to `"required"`. Foundry Local SDK 2.0.1 returns an
+OpenAI-compatible JSON response for `qwen2.5-1.5b`; the workshop adapter
+translates it to the compact response shape used by the agent. The model makes
+one routing decision, while the host renders trusted typed data without a
+second model call.
 
 ## Foundry Local
 
@@ -140,7 +136,7 @@ response = client.complete_chat(messages, tools)
 ```
 
 The adapter uses the SDK v2 typed `ChatSession`, `Request`, and item APIs. The
-event image uses the cached CPU variant of `qwen3.5-4b`. Attendee code must not
+event image uses the cached CPU variant of `qwen2.5-1.5b`. Attendee code must not
 call a download API. The adapter call is synchronous; async hosts can use
 `await asyncio.to_thread(client.complete_chat, messages, tools)`.
 

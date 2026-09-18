@@ -75,7 +75,7 @@ def main() -> int:
         model.load()
 
     client = NativeChatClient(model, get_max_tokens())
-    client.settings.tool_choice = {"type": "required"}
+    client.settings.tool_choice = "required"
     started = time.monotonic()
     try:
         complete_agent_smoke_test(client)
@@ -91,7 +91,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    print("Two-turn agent smoke test passed: get_weather -> final_answer")
+    print("Tool-calling smoke test passed: get_weather(Pune)")
     print("VM model preparation complete. Run scripts/verify_setup.py with networking off.")
     return 0
 

@@ -9,7 +9,7 @@ The tested stack is:
 - FastMCP `4.0.0`
 - MCP protocol revision `2026-07-28`
 - Foundry Local Python SDK `foundry-local-sdk==2.0.1`
-- Foundry Local model alias `qwen3.5-4b`
+- Foundry Local model alias `qwen2.5-1.5b`
 - Python 3.11 or newer on Windows
 
 No cloud account, API key, package install, model download, or event Wi-Fi is
@@ -63,7 +63,7 @@ reproduce and prevents accidental real-world booking decisions.
 flowchart LR
     U[Attendee] --> B[Local browser]
     B --> A[Handwritten agent loop]
-    A <--> F[Foundry Local qwen3.5-4b]
+    A <--> F[Foundry Local qwen2.5-1.5b]
     A <-->|FastMCP over stdio| S[Bharat Travel Desk]
     S --> D[Deterministic India travel data]
 ```
@@ -80,7 +80,7 @@ Run all commands from the repository root:
 .\workshop.ps1 check
 .\workshop.ps1 raw
 .\workshop.ps1 client
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
+.\workshop.ps1 agent "What is the weather in Pune?"
 .\workshop.ps1 web
 .\workshop.ps1 approval
 .\workshop.ps1 test

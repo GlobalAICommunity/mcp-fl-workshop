@@ -1,7 +1,7 @@
 # Foundry Local model
 
 The workshop has one supported runtime path: Foundry Local with cached alias
-`qwen3.5-4b`. Its tool-calling CPU variant runs on the workshop CPU.
+`qwen2.5-1.5b`. Its tool-calling CPU variant runs on the workshop CPU.
 
 The direct Python dependency is pinned in `requirements-server.txt`:
 
@@ -35,8 +35,8 @@ boundary.
 
 ## Alias versus model ID
 
-`qwen3.5-4b` is an alias. Foundry Local maps it to concrete model variants. The
-workshop explicitly selects `qwen3.5-4b-generic-cpu` so catalog ordering cannot
+`qwen2.5-1.5b` is an alias. Foundry Local maps it to concrete model variants. The
+workshop explicitly selects its CPU variant so catalog ordering cannot
 select the GPU provider.
 
 The selected concrete ID is printed by the preparation script and by
@@ -76,8 +76,7 @@ hardware:
 3. the CPU variant is cached under the attendee account
 4. the model loads with networking disabled
 5. a forced `get_weather` request produces a structured tool call
-6. a second completion consumes the tool result and calls `final_answer`
-7. the complete agent answers a multi-tool India travel question
+6. the complete agent calls `get_weather` for Pune and displays the exact typed result
 
 A successful import or cache listing alone is insufficient.
 
@@ -104,5 +103,5 @@ generation speed depends on the VM CPU, memory, execution provider, and host
 contention, so measure on the same class of hardware used in the room.
 
 Record cold-load latency, generation speed, system memory use, and the complete
-multi-tool acceptance result for the final VM image. These measurements are
+focused Pune weather acceptance result for the final VM image. These measurements are
 specific to the event CPU and virtualization configuration.

@@ -20,4 +20,4 @@ questions:
 ---
 
 Observe MCP as an ordinary application protocol first. Then follow one complete
-model, tool, result, and final_answer cycle in the supplied handwritten loop.
+model selection, tool execution, and typed host-rendering path in the supplied loop.

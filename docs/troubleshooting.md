@@ -98,12 +98,7 @@ The preparation and readiness smoke tests retry one cancellation for each
 idempotent model-only completion. They do not retry normal agent turns, where
 replaying a tool request could repeat an action.
 
-The failure names the model completion that failed:
-
-- `get_weather completion`: the model could not complete the initial tool-call
-	request.
-- `post-tool final_answer completion`: the initial tool call succeeded, but the
-	model could not finish after receiving the smoke test's fixed weather result.
+The failure means the model could not complete the forced `get_weather` request.
 
 The elapsed time is for the reported attempt, not the whole readiness check.
 `on attempt 2` means the single retry also failed. Timing alone does not identify
@@ -133,9 +128,9 @@ Do not use `--skip-model` to accept an image with failing inference.
 
 ## The model is cached but emits no tool call
 
-The full preflight first exposes only `get_weather`, then sends its result with
-only `final_answer`; both calls use `tool_choice` set to `required`. Failure on
-either turn means the runtime is not ready even if ordinary chat works.
+The full preflight exposes only `get_weather` with `tool_choice` set to
+`required`. Failure to produce a structured call means the runtime is not ready
+even if ordinary chat works.
 
 Check that the image uses the pinned SDK, the configured alias supports tool
 calling, and the preparation smoke test passed. Rebuild or replace the image.

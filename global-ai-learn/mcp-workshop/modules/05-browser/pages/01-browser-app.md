@@ -44,8 +44,7 @@ answer should use deterministic tool results.
 date; look for the orange `get_weather({"city":"Pune"})` trace beneath a grounded
 answer.*
 
-If time remains, try the slower multi-tool question `Find a flight from
-Bengaluru to Kochi and tell me what to pack.`
+Confirm the displayed weather values match the server's typed Pune result.
 
 The browser sends only a local JSON question to `/api/chat`. It never receives
 model files or permission to call arbitrary MCP methods.

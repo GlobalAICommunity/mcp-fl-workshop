@@ -177,9 +177,9 @@ def check_local_model() -> None:
 
     progress(
         "Foundry Local model",
-        "model loaded; running two CPU completions",
+        "model loaded; requesting the get_weather tool",
     )
-    local_model.client.settings.tool_choice = {"type": "required"}
+    local_model.client.settings.tool_choice = "required"
     try:
         mc.complete_agent_smoke_test(local_model.client)
     except Exception as exc:  # noqa: BLE001
@@ -207,7 +207,7 @@ def check_local_model() -> None:
     report(
         OK,
         "Foundry Local model",
-        f"{local_model.alias} completed get_weather -> final_answer",
+        f"{local_model.alias} requested get_weather(Pune)",
     )
 
 

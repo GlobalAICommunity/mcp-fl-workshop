@@ -9,7 +9,7 @@ estimatedMinutes: 5
 
 The workshop VM already contains the repository, Python 3.11 or newer, `.venv`,
 FastMCP 4.0.0, Foundry Local SDK 2.0.1, and the cached CPU variant
-of model alias `qwen3.5-4b`.
+of model alias `qwen2.5-1.5b`.
 
 Open the repository in VS Code and create a PowerShell terminal. Confirm the
 current directory contains `workshop.ps1`, `docs`, and `src`:
@@ -29,7 +29,7 @@ imports the browser, loads the cached model, and forces a real `get_weather`
 tool request. It performs no download.
 
 The model check prints `[ .... ]` while it loads the cached CPU model and runs
-two completions. Each stage can take several minutes. While `python.exe` is using
+one tool-selection completion. It can take several minutes. While `python.exe` is using
 CPU or memory, leave the check running. If one stage remains unchanged for more
 than five minutes and `python.exe` is using almost no CPU, press `Ctrl+C` and ask
 the facilitator for help.

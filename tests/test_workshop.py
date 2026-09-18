@@ -59,7 +59,7 @@ class CompletionDiagnosticTests(unittest.TestCase):
                 client.complete_chat.assert_called_once()
                 self.assertEqual(
                     client.settings.tool_choice,
-                    {"type": "required" if mode == "required" else "none"},
+                    "required" if mode == "required" else "none",
                 )
                 if mode == "baseline":
                     client.complete_chat.assert_called_once_with([
@@ -82,7 +82,7 @@ class RepeatingChatClient:
         self.calls += 1
         call = SimpleNamespace(
             id=f"call-{self.calls}",
-            function=SimpleNamespace(name="list_destinations", arguments="{}"),
+            function=SimpleNamespace(name="missing_tool", arguments="{}"),
         )
         message = SimpleNamespace(content="", tool_calls=[call])
         return SimpleNamespace(choices=[SimpleNamespace(message=message)])
@@ -95,14 +95,10 @@ class FlightChatClient:
 
     def complete_chat(self, messages, tools):
         self.calls += 1
-        if self.calls == 1:
-            name = "search_flights"
-            arguments = (
-                '{"origin":"Bengaluru","destination":"Kochi","max_results":1}'
-            )
-        else:
-            name = "final_answer"
-            arguments = '{"answer":"A flight is available."}'
+        name = "search_flights"
+        arguments = (
+            '{"origin":"Bengaluru","destination":"Kochi","max_results":1}'
+        )
         call = SimpleNamespace(
             id=f"call-{self.calls}",
             function=SimpleNamespace(name=name, arguments=arguments),
@@ -120,12 +116,8 @@ class WeatherChatClient:
         self.tool_names_by_turn.append(
             [tool["function"]["name"] for tool in tools]
         )
-        if len(self.tool_names_by_turn) == 1:
-            name = "get_weather"
-            arguments = '{"city":"Pune"}'
-        else:
-            name = "final_answer"
-            arguments = '{"answer":"Pune is clear and 27 C."}'
+        name = "get_weather"
+        arguments = '{"city":"Pune"}'
         call = SimpleNamespace(
             id=f"call-{len(self.tool_names_by_turn)}",
             function=SimpleNamespace(name=name, arguments=arguments),
@@ -135,45 +127,24 @@ class WeatherChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
-    def test_agent_smoke_test_completes_post_tool_turn(self) -> None:
+    def test_agent_smoke_test_requires_weather_for_pune(self) -> None:
         first_call = SimpleNamespace(
             id="weather-1",
             function=SimpleNamespace(
                 name="get_weather", arguments='{"city":"Pune"}'
             ),
         )
-        final_call = SimpleNamespace(
-            id="final-1",
-            function=SimpleNamespace(
-                name="final_answer", arguments='{"answer":"Pune is clear."}'
-            ),
-        )
         client = SimpleNamespace(complete_chat=unittest.mock.Mock())
-        client.complete_chat.side_effect = [
-            SimpleNamespace(
-                choices=[
-                    SimpleNamespace(
-                        message=SimpleNamespace(tool_calls=[first_call])
-                    )
-                ]
-            ),
-            SimpleNamespace(
-                choices=[
-                    SimpleNamespace(
-                        message=SimpleNamespace(tool_calls=[final_call])
-                    )
-                ]
-            ),
-        ]
+        client.complete_chat.return_value = SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=SimpleNamespace(tool_calls=[first_call]))
+            ]
+        )
 
-        answer = complete_agent_smoke_test(client)
+        city = complete_agent_smoke_test(client)
 
-        self.assertEqual(answer, "Pune is clear.")
-        self.assertEqual(client.complete_chat.call_count, 2)
-        second_messages, second_tools = client.complete_chat.call_args.args
-        self.assertEqual(second_messages[-1]["role"], "tool")
-        self.assertEqual(second_messages[-1]["tool_call_id"], "weather-1")
-        self.assertEqual(second_tools[0]["function"]["name"], "final_answer")
+        self.assertEqual(city, "Pune")
+        client.complete_chat.assert_called_once()
 
     def test_agent_smoke_test_identifies_weather_cancellation(self) -> None:
         cancellation = FoundryLocalException(
@@ -200,37 +171,28 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         self.assertIs(caught.exception.__cause__, cancellation)
         self.assertEqual(client.complete_chat.call_count, 2)
 
-    def test_agent_smoke_test_identifies_post_tool_cancellation(self) -> None:
-        first_call = SimpleNamespace(
+    def test_agent_smoke_test_rejects_invalid_arguments(self) -> None:
+        invalid_call = SimpleNamespace(
             id="weather-1",
             function=SimpleNamespace(
-                name="get_weather", arguments='{"city":"Pune"}'
+                name="get_weather", arguments='{"city":'
             ),
         )
-        first_response = SimpleNamespace(
+        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
+        client.complete_chat.return_value = SimpleNamespace(
             choices=[
-                SimpleNamespace(message=SimpleNamespace(tool_calls=[first_call]))
+                SimpleNamespace(message=SimpleNamespace(tool_calls=[invalid_call]))
             ]
         )
-        cancellation = FoundryLocalException(
-            "Error during chat completion: Operation was cancelled"
-        )
-        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
-        client.complete_chat.side_effect = [
-            first_response,
-            cancellation,
-            cancellation,
-        ]
 
         with self.assertRaisesRegex(
-            ConfigError, "post-tool final_answer completion failed"
-        ) as caught:
+            ConfigError, "invalid JSON tool arguments"
+        ):
             complete_agent_smoke_test(client)
 
-        self.assertIs(caught.exception.__cause__, cancellation)
-        self.assertEqual(client.complete_chat.call_count, 3)
+        client.complete_chat.assert_called_once()
 
-    async def test_successful_weather_call_leaves_only_final_answer(self) -> None:
+    async def test_successful_weather_call_returns_structured_result(self) -> None:
         chat_client = WeatherChatClient()
 
         answer = await run(
@@ -239,12 +201,8 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             mcp_server=travel_server,
         )
 
-        self.assertEqual(answer, "Pune is clear and 27 C.")
-        self.assertEqual(
-            set(chat_client.tool_names_by_turn[0]),
-            {"list_destinations", "get_weather", "final_answer"},
-        )
-        self.assertEqual(chat_client.tool_names_by_turn[1], ["final_answer"])
+        self.assertRegex(answer, r"^Pune: \d+ C, .+, humidity \d+%\.$")
+        self.assertEqual(chat_client.tool_names_by_turn, [["get_weather"]])
 
     def test_raw_helper_returns_verbose_tool_error(self) -> None:
         completed = subprocess.run(
@@ -303,20 +261,17 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         ]
         tools = [
             {"type": "function", "function": {"name": name}} for name in names
-        ] + [FINAL_ANSWER_TOOL]
+        ]
 
         selected = tools_for_question("What is the weather in Pune?", tools)
 
         selected_names = {tool["function"]["name"] for tool in selected}
-        self.assertEqual(
-            selected_names, {"list_destinations", "get_weather", "final_answer"}
-        )
+        self.assertEqual(selected_names, {"get_weather"})
 
     def test_ambiguous_question_keeps_all_tools(self) -> None:
         tools = [
             {"type": "function", "function": {"name": "get_weather"}},
             {"type": "function", "function": {"name": "search_flights"}},
-            FINAL_ANSWER_TOOL,
         ]
 
         self.assertEqual(tools_for_question("Help me decide.", tools), tools)
@@ -484,7 +439,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         item_type = object()
         model = SimpleNamespace(id="qwen3.5-4b-cpu")
         client = NativeChatClient(model, 64)
-        client.settings.tool_choice = {"type": "required"}
+        client.settings.tool_choice = "required"
         messages = [{"role": "user", "content": "Weather in Pune?"}]
         tools = [{"type": "function", "function": {"name": "get_weather"}}]
 
@@ -506,7 +461,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
                 "max_tokens": 64,
                 "temperature": 0.0,
                 "tools": tools,
-                "tool_choice": {"type": "required"},
+                "tool_choice": "required",
             },
         )
         self.assertEqual(completion.choices[0].message.content, "")
@@ -615,7 +570,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIs(caught.exception.__cause__, failure)
         self.assertEqual(complete_chat.call_count, 2)
-        self.assertEqual(tool_calls, [("list_destinations", {})])
+        self.assertEqual(tool_calls, [("missing_tool", {})])
         messages = complete_chat.call_args.args[0]
         self.assertEqual(messages[-1]["role"], "tool")
         self.assertEqual(messages[-1]["tool_call_id"], "call-1")

@@ -142,7 +142,7 @@ model call: MCP is working before any agent behavior is added.
 ## Part B: connect the local model
 
 `src/model_config.py` asks the Foundry Local singleton for model alias
-`qwen3.5-4b` and selects its CPU variant. It rejects
+`qwen2.5-1.5b` and selects its CPU variant. It rejects
 unknown, non-tool-capable, or uncached models. If needed, it loads the cached
 model and returns the workshop adapter around a typed native `ChatSession`.
 Each completion is sent as a self-contained `OPENAI_JSON` item so the native
@@ -160,7 +160,7 @@ The image builder performed the download earlier. Open
 llm = chat_client
 if llm is None:
     llm = get_local_model().client
-llm.settings.tool_choice = {"type": "required"}
+llm.settings.tool_choice = "required"
 ```
 
 The Foundry Local chat call is synchronous, while the MCP client is asynchronous.
@@ -182,10 +182,9 @@ No local HTTP endpoint is required.
 
 Foundry Local SDK 2.0.1 returns an OpenAI-compatible JSON response when
 `tool_choice` is `required`. The workshop adapter translates that response to
-the small shape used by this lesson. The agent supplies the four MCP travel tools
-plus one host-only `final_answer` function. The model chooses a travel tool while
-it needs data and calls `final_answer` when it is ready to stop. That last
-function is handled by the host and is never sent to the MCP server.
+the small shape used by this lesson. The host keeps only tools relevant to the
+question, and the model selects one. FastMCP executes it and the host formats
+the typed result directly, avoiding a slower second model completion.
 
 ## The schema adapter
 
@@ -223,47 +222,33 @@ The Python property is `input_schema`; the MCP JSON field on the wire is
 ```mermaid
 flowchart TD
     Q[Add user question] --> M[Call Foundry Local with messages and tools]
-    M --> C{Which function was requested?}
-    C -->|final_answer| A[Return its answer]
-    C -->|Travel tool| H[Append structured assistant calls]
-    H --> T[Call each travel tool through FastMCP]
-    T --> R[Append results with matching call IDs]
-    R --> M
+    M --> C[Read the structured tool request]
+    C --> T[Call the travel tool through FastMCP]
+    T --> R[Read structured content]
+    R --> A[Format the typed result in the host]
 ```
 
 Open the `run()` function and find each arrow in code. These details prevent
 subtle failures:
 
-- keep the assistant turn and its structured tool requests
-- omit duplicate raw `<tool_call>` markup when structured calls are present
-- attach every tool result to the matching `tool_call_id`
-- serialize `result.structured_content` for the model instead of parsing JSON
-    back out of a text block
-- if a flight answer omits required fields, insert them from the first
-    structured flight result instead of starting another slow model turn
+- read structured tool requests instead of duplicate raw `<tool_call>` markup
+- execute only the requested MCP tool with validated JSON arguments
+- use `result.structured_content` for successful application logic
+- preserve text errors for bounded retries
+- format successful typed results without another model call
 - cap the loop with `MAX_TURNS`
 
 The loop also gives malformed JSON and MCP tool errors back to the model as
 text. That lets the next turn correct a request instead of crashing the host.
 
-## Run a multi-tool question
-
-```powershell
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
-```
-
-You should see one or more `-> calling ...` lines followed by a concise answer.
-Flight fares are fictional and shown in INR. Exact wording and call order can
-vary because the model is generative.
-
-Try a smaller request:
+## Run a focused question
 
 ```powershell
 .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
-Then ask for an unsupported city. Inspect whether the model reads the error,
-calls `list_destinations`, or explains the supported set.
+You should see one `get_weather` call followed by the exact temperature,
+condition, and humidity returned by the server.
 
 ## Guided code checkpoints
 

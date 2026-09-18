@@ -32,7 +32,7 @@ The check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 2.0.1 in `.venv`
 - the FastMCP server and protocol negotiation
 - the browser application import
-- a cached CPU variant of `qwen3.5-4b` that can call a tool and finish after its result
+- a cached CPU variant of `qwen2.5-1.5b` that can request `get_weather`
 
 A ready image ends with output similar to:
 
@@ -42,20 +42,18 @@ A ready image ends with output similar to:
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
 [ .... ] Foundry Local model - locating and loading the cached CPU model; this can take several minutes
-[ .... ] Foundry Local model - model loaded; running two CPU completions
-[ .... ] Foundry Local model - get_weather completion, attempt 1 of 2
-[ .... ] Foundry Local model - post-tool final_answer completion, attempt 1 of 2
-[  ok  ] Foundry Local model - qwen3.5-4b completed get_weather -> final_answer
+[ .... ] Foundry Local model - model loaded; requesting the get_weather tool
+[  ok  ] Foundry Local model - qwen2.5-1.5b requested get_weather(Pune)
 
 All good - you are ready for the offline workshop.
 ```
 
-The `[ .... ]` lines are progress, not failures. Model loading and each CPU
+The `[ .... ]` lines are progress, not failures. Model loading and the CPU
 completion can take several minutes. While `python.exe` is using CPU or memory,
 leave the check running. If the same stage remains for more than five minutes
 and `python.exe` is using almost no CPU, press `Ctrl+C` and ask the facilitator
-for help. The check proves both model turns; finding model files or producing
-only the first call is not enough.
+for help. The check proves that the model can produce the structured tool call
+needed by the workshop agent.
 
 ## 3. If PowerShell blocks the script
 

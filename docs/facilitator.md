@@ -40,12 +40,12 @@ pair the attendee with a working machine and continue.
 - Warm the model once with the full preflight.
 - Verify port 7932 is free.
 - Keep networking disabled if that is part of the event promise.
-- Put the sample multi-tool question where everyone can see it.
+- Put the sample weather question where everyone can see it.
 
 Recommended question:
 
 ```text
-Find a flight from Bengaluru to Kochi and tell me what to pack.
+What is the weather in Pune?
 ```
 
 All travel data and fares are fictional. Say that before the first demo so the
@@ -97,8 +97,8 @@ For the agent, trace one iteration only:
 4. FastMCP executes the tool.
 5. The host appends a result with the same call ID.
 
-Then run the multi-tool question. Exact prose and order can vary. Judge the demo
-by valid tool use and grounded output, not identical wording.
+Then run the Pune weather question. The model should request `get_weather`; the
+host should display the server's exact typed values.
 
 ### 5. Browser - 10 minutes
 
@@ -133,12 +133,12 @@ It keeps prompts, tool requests, and results on the VM and avoids accounts or
 network dependencies. The native SDK also avoids managing a separate model
 server port.
 
-**Why `qwen3.5-4b` on CPU?**
+**Why `qwen2.5-1.5b` on CPU?**
 
-This CPU model supports tool calling, avoids dependence on CUDA or WebGPU,
-and completes within the native request window on the workshop CPU. The 2B
-multimodal model exceeded that window during image acceptance. Preparation and
-attendee validation must still use representative CPU and memory resources.
+This compact text model supports the bounded tool-selection task, avoids CUDA
+or WebGPU, and responds faster on workshop CPUs. The host renders typed MCP
+results because small models are less reliable when asked to restate tool data.
+Preparation and attendee validation must still use representative hardware.
 
 **Is a local model automatically secure?**
 

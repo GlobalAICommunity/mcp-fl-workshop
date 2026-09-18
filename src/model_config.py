@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3.5-4b"
+DEFAULT_MODEL = "qwen2.5-1.5b"
 
 
 class ConfigError(RuntimeError):
@@ -215,7 +215,7 @@ def complete_smoke_test(
 
 
 def complete_agent_smoke_test(client) -> str:
-    """Prove the model can call a tool and finish after receiving its result."""
+    """Prove the model can emit the structured tool call used by the lab."""
     weather_tool = {
         "type": "function",
         "function": {
@@ -228,18 +228,6 @@ def complete_agent_smoke_test(client) -> str:
             },
         },
     }
-    final_tool = {
-        "type": "function",
-        "function": {
-            "name": "final_answer",
-            "description": "Finish with a short answer based on the tool result.",
-            "parameters": {
-                "type": "object",
-                "properties": {"answer": {"type": "string"}},
-                "required": ["answer"],
-            },
-        },
-    }
     messages = [{"role": "user", "content": "Use get_weather for Pune."}]
     first = complete_smoke_test(
         client, messages, [weather_tool], stage="get_weather completion"
@@ -247,44 +235,13 @@ def complete_agent_smoke_test(client) -> str:
     calls = first.choices[0].message.tool_calls or []
     if not calls or calls[0].function.name != "get_weather":
         raise ConfigError("Model did not emit the required get_weather call.")
-
-    call = calls[0]
-    messages.extend(
-        [
-            {
-                "role": "assistant",
-                "content": "",
-                "tool_calls": [
-                    {
-                        "id": call.id,
-                        "type": "function",
-                        "function": {
-                            "name": call.function.name,
-                            "arguments": call.function.arguments,
-                        },
-                    }
-                ],
-            },
-            {
-                "role": "tool",
-                "tool_call_id": call.id,
-                "content": '{"city":"Pune","temperature_c":27,"condition":"clear"}',
-            },
-        ]
-    )
-    second = complete_smoke_test(
-        client, messages, [final_tool], stage="post-tool final_answer completion"
-    )
-    final_calls = second.choices[0].message.tool_calls or []
-    if not final_calls or final_calls[0].function.name != "final_answer":
-        raise ConfigError("Model did not emit final_answer after the tool result.")
     try:
-        answer = json.loads(final_calls[0].function.arguments or "{}").get("answer")
+        city = json.loads(calls[0].function.arguments or "{}").get("city")
     except json.JSONDecodeError as exc:
-        raise ConfigError("Model emitted invalid JSON for final_answer.") from exc
-    if not isinstance(answer, str) or not answer.strip():
-        raise ConfigError("Model emitted an empty final_answer.")
-    return answer.strip()
+        raise ConfigError("Model emitted invalid JSON tool arguments.") from exc
+    if not isinstance(city, str) or city.strip().lower() != "pune":
+        raise ConfigError("Model did not request weather for Pune.")
+    return city.strip()
 
 
 def select_cpu_variant(model) -> None:

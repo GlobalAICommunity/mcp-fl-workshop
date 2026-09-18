@@ -56,7 +56,7 @@ the check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 2.0.1 in **.venv**.
 - The FastMCP server and protocol negotiation.
 - The browser application import.
-- A cached CPU variant of **qwen3.5-4b** that can call a tool and finish after its result.
+- A cached CPU variant of **qwen2.5-1.5b** that can request **get_weather**.
 
 A ready image ends with output similar to:
 
@@ -66,15 +66,13 @@ A ready image ends with output similar to:
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
 [ .... ] Foundry Local model - locating and loading the cached CPU model; this can take several minutes
-[ .... ] Foundry Local model - model loaded; running two CPU completions
-[ .... ] Foundry Local model - get_weather completion, attempt 1 of 2
-[ .... ] Foundry Local model - post-tool final_answer completion, attempt 1 of 2
-[  ok  ] Foundry Local model - qwen3.5-4b completed get_weather -> final_answer
+[ .... ] Foundry Local model - model loaded; requesting the get_weather tool
+[  ok  ] Foundry Local model - qwen2.5-1.5b requested get_weather(Pune)
 
 All good - you are ready for the offline workshop.
 ```
 
-The **[ .... ]** lines are progress, not failures. Model loading and each CPU
+The **[ .... ]** lines are progress, not failures. Model loading and the CPU
 completion can take several minutes. While **python.exe** is using CPU or memory,
 leave the check running. If the same stage remains for more than five minutes
 and **python.exe** is using almost no CPU, press **Ctrl+C** and ask the facilitator
@@ -87,9 +85,8 @@ Do not install packages or download a model during the event. Record any issues 
 !IMAGE[qrcode-mcp.png](instructions358450/qrcode-mcp.png)
 
 If the model reports **Operation was cancelled**, record the full failed line,
-including the stage, elapsed time, and attempt number. **get_weather completion**
-identifies the initial model request; **post-tool final_answer completion**
-identifies the request after the test supplies a weather result.
+including the stage, elapsed time, and attempt number. The readiness request is
+idempotent and is retried once before the check fails.
 
 Ask the facilitator for help if the retry also fails. The VM has not passed
 readiness, even if the other four checks succeed. Facilitators can follow the
@@ -375,11 +372,202 @@ You will first run the supplied client, then inspect the local model connection
 and the handwritten loop. These use the reference server, so they do not depend
 on completing your learner server.
 
-**No code changes are required in Lesson 4.** Run the supplied programs and
-find the excerpts below in the solution files. Do not paste them into your
-learner server or run them separately. Each Python block is an exact excerpt;
-only its surrounding indentation is removed where needed for readability.
-Use the named functions and calls to locate code rather than fixed line numbers.
+### Review the Complete Travel Server
+
+The client and agent in this lesson launch the following reference server from
+[src/solution/travel_server.py](src/solution/travel_server.py). Review how its
+typed return models become MCP output schemas before following the client path.
+
+```python
+"""Bharat travel MCP server - the completed FastMCP 4 implementation."""
+
+from __future__ import annotations
+
+import hashlib
+from datetime import date, timedelta
+from typing import Annotated, Literal
+
+from fastmcp import FastMCP
+from pydantic import BaseModel, Field
+
+mcp = FastMCP(
+    "Bharat Travel Desk",
+    instructions="Offline fictional India travel data.",
+)
+
+DESTINATIONS: dict[str, str] = {
+    "bengaluru": "Technology hubs, gardens and a mild plateau climate.",
+    "chennai": "Coastal neighbourhoods, music and South Indian cuisine.",
+    "delhi": "Historic sites, busy markets and a vast metro network.",
+    "hyderabad": "Lakes, historic architecture and a major technology community.",
+    "jaipur": "Forts, craft traditions and the Pink City streetscape.",
+    "kochi": "A harbour city with backwaters, art and layered history.",
+    "kolkata": "Literature, food, tramways and Hooghly riverfronts.",
+    "mumbai": "A coastal megacity known for finance, film and local trains.",
+    "pune": "Universities, software companies and nearby hill country.",
+    "varanasi": "Ancient riverfront ghats, lanes and living traditions.",
+}
+
+CONDITIONS = ["clear", "cloudy", "humid", "light rain", "windy", "hazy"]
+
+
+def _seed(*parts: str) -> int:
+    joined = "|".join(parts).lower()
+    return int(hashlib.sha256(joined.encode()).hexdigest(), 16)
+
+
+def _known_city(city: str) -> str:
+    key = city.strip().lower()
+    if key not in DESTINATIONS:
+        known = ", ".join(sorted(DESTINATIONS))
+        raise ValueError(f"Unknown city {city!r}. Known cities are: {known}.")
+    return key
+
+
+class Weather(BaseModel):
+    """Current weather for a city."""
+
+    city: str
+    temperature_c: int
+    condition: str
+    humidity_pct: int = Field(ge=0, le=100)
+
+
+class ForecastDay(BaseModel):
+    """Weather for a single future day."""
+
+    day: str
+    high_c: int
+    low_c: int
+    condition: str
+
+
+class Flight(BaseModel):
+    """A bookable (and entirely imaginary) flight."""
+
+    flight_number: str
+    origin: str
+    destination: str
+    departs: str
+    duration_hours: float
+    price_inr: int
+
+
+@mcp.tool
+def list_destinations() -> list[str]:
+    """List valid city names after a city is missing, unknown, or unsupported."""
+    return sorted(DESTINATIONS)
+
+
+@mcp.tool
+def get_weather(
+    city: Annotated[str, Field(description="City requested by the user.")],
+) -> Weather:
+    """Get current weather for one city; use get_forecast for packing advice."""
+    key = _known_city(city)
+    seed = _seed("weather", key, date.today().isoformat())
+    return Weather(
+        city=key.title(),
+        temperature_c=12 + (seed % 27),
+        condition=CONDITIONS[seed % len(CONDITIONS)],
+        humidity_pct=40 + (seed % 55),
+    )
+
+
+@mcp.tool
+def get_forecast(
+    city: Annotated[
+        str,
+        Field(description="Arrival city requested by the user."),
+    ],
+    days: Annotated[int, Field(ge=1, le=7, description="Days ahead to forecast.")] = 3,
+    units: Annotated[
+        Literal["celsius", "fahrenheit"], Field(description="Temperature units.")
+    ] = "celsius",
+) -> list[ForecastDay]:
+    """Get a future forecast; use the arrival city when deciding what to pack."""
+    key = _known_city(city)
+    if not 1 <= days <= 7:
+        raise ValueError("days must be between 1 and 7")
+
+    forecast: list[ForecastDay] = []
+    for offset in range(1, days + 1):
+        day = date.today() + timedelta(days=offset)
+        seed = _seed("forecast", key, day.isoformat())
+        low_c = 10 + (seed % 22)
+        high_c = low_c + 2 + (seed % 8)
+        if units == "fahrenheit":
+            low_c = round(low_c * 9 / 5 + 32)
+            high_c = round(high_c * 9 / 5 + 32)
+        forecast.append(
+            ForecastDay(
+                day=day.isoformat(),
+                high_c=high_c,
+                low_c=low_c,
+                condition=CONDITIONS[seed % len(CONDITIONS)],
+            )
+        )
+    return forecast
+
+
+@mcp.tool
+def search_flights(
+    origin: Annotated[str, Field(description="Departure city requested by the user.")],
+    destination: Annotated[str, Field(description="Arrival city requested by the user.")],
+    max_results: Annotated[
+        int, Field(ge=1, le=5, description="Maximum number of flights to return.")
+    ] = 1,
+) -> list[Flight]:
+    """Find fictional flights between two different supported cities."""
+    origin_key = _known_city(origin)
+    dest_key = _known_city(destination)
+    if origin_key == dest_key:
+        raise ValueError("origin and destination must be different cities")
+    if not 1 <= max_results <= 5:
+        raise ValueError("max_results must be between 1 and 5")
+
+    flights: list[Flight] = []
+    for index in range(max_results):
+        seed = _seed("flight", origin_key, dest_key, str(index))
+        flights.append(
+            Flight(
+                flight_number=f"LAB {100 + (seed % 800)}",
+                origin=origin_key.title(),
+                destination=dest_key.title(),
+                departs=f"{6 + (seed % 15):02d}:{(seed % 4) * 15:02d}",
+                duration_hours=round(1.0 + (seed % 35) / 10, 1),
+                price_inr=3000 + (seed % 9000),
+            )
+        )
+    return sorted(flights, key=lambda flight: flight.departs)
+
+
+@mcp.resource("travel://destinations")
+def destinations_catalog() -> str:
+    """The full destination catalogue as human-readable text."""
+    lines = [f"- {city.title()}: {blurb}" for city, blurb in sorted(DESTINATIONS.items())]
+    return "Destinations this travel service covers:\n" + "\n".join(lines)
+
+
+@mcp.prompt
+def plan_a_trip(city: str, nights: int = 3) -> str:
+    """Draft a short trip plan for a city."""
+    return (
+        f"Plan a {nights}-night trip to {city}.\n\n"
+        "Steps:\n"
+        f"1. Check the weather forecast for {city} for the next {nights} days.\n"
+        f"2. Find flights from Bengaluru to {city}.\n"
+        "3. Recommend what to pack based on the forecast, and suggest an itinerary.\n"
+    )
+
+
+if __name__ == "__main__":
+    mcp.run()
+```
+
+No code changes are required in Lesson 4. Run the supplied programs and find
+the later excerpts in the solution files. Use the named functions and calls to
+locate code rather than fixed line numbers.
 
 ### Part A: Call MCP Without a Model
 
@@ -510,7 +698,7 @@ model call: MCP is working before any agent behavior is added.
 ### Part B: Connect the Local Model
 
 [src/model_config.py](src/model_config.py) asks the Foundry Local singleton for
-model alias **qwen3.5-4b**, then selects the highest-priority CPU variant
+model alias **qwen2.5-1.5b**, then selects the highest-priority CPU variant
 exposed by the catalog.
 It rejects unknown, accelerator-only, non-tool-capable, or uncached models. If needed,
 it loads the cached model and returns its native chat client.
@@ -526,7 +714,7 @@ The image builder performed the download earlier. Open
 llm = chat_client
 if llm is None:
     llm = get_local_model().client
-llm.settings.tool_choice = {"type": "required"}
+llm.settings.tool_choice = "required"
 ```
 
 the Foundry Local chat call is synchronous, while the MCP client is asynchronous.
@@ -548,12 +736,10 @@ no local HTTP endpoint is required.
 
 Foundry Local SDK 2.0.1 returns an OpenAI-compatible JSON response when
 **tool_choice** is **required**. The workshop adapter translates it to the compact
-response shape used by this lesson. The host first filters the four MCP travel
-tools to those relevant to the question, then adds one host-only
-**final_answer** function. Ambiguous questions retain all tools. The model
-chooses a travel tool while it needs data and calls **final_answer** when it is
-ready to stop. That last function is handled by the host and is never sent to
-the MCP server.
+response shape used by this lesson. The host filters the four MCP travel tools
+to those relevant to the question, and the model selects one. After FastMCP
+executes that tool, the host formats its structured result directly. This keeps
+the answer grounded and avoids a second, slower model completion.
 
 ### The Schema Adapter
 
@@ -598,48 +784,36 @@ a host-side optimization applied only to the copy sent to the model.
 ### Route Only Relevant Tools
 
 Before the turn loop, **tools_for_question()** uses small keyword groups to keep
-likely tools plus **final_answer**. For example, a weather question does not pay
-the token cost of the flight schema. If no hint matches, it keeps every tool so
-unusual wording remains recoverable. After a successful travel call, the host
-removes that completed schema and the recovery-only **list_destinations** schema.
-A simple weather request therefore sends only **final_answer** on turn 2.
+only likely tools. A weather question sends only **get_weather**, so the small
+model does not pay the token cost of unrelated schemas. If no hint matches, the
+host keeps every tool so unusual wording remains recoverable.
 
 ### The Complete Loop
 
-!IMAGE [Agent loop: send the user question, messages, and tools to Foundry Local; return a final answer or execute travel tools through FastMCP, append results with matching call IDs, and repeat](instructions358450/skillable-2.png)
+!IMAGE [Agent loop: send the user question and relevant tools to Foundry Local, execute the selected tool through FastMCP, and format its structured result](instructions358450/skillable-2.png)
 open the **run()** function and find each arrow in code. These details prevent
 subtle failures:
 
-- Keep the assistant turn and its structured tool requests.
-- Omit duplicate raw **<tool_call>** markup when structured calls are present.
-- Attach every tool result to the matching **tool_call_id**.
-- Unwrap a sole **result** envelope and serialize the smaller structured value
-    for the model instead of parsing JSON back out of a text block.
-- If a flight answer omits required fields, insert them from the first
-    structured flight result instead of starting another slow model turn.
+- Read the structured tool request instead of raw **<tool_call>** markup.
+- Execute only the named MCP tool with its validated JSON arguments.
+- Use **structured_content** for successful results and text for errors.
+- Unwrap a sole **result** envelope before presentation.
+- Format the typed result in the host instead of asking a small model to repeat
+    facts it might alter.
 - Cap the loop with **MAX_TURNS**.
 
 The loop also gives malformed JSON and MCP tool errors back to the model as
 text. That lets the next turn correct a request instead of crashing the host.
 
-### Run a Multi-Tool Question
-
-```powershell
-.\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
-```
-
-you should see one or more **-> calling ...** lines followed by a concise answer.
-Flight fares are fictional and shown in INR. Exact wording and call order can
-vary because the model is generative.
-
-Try a smaller request:
+### Run a Focused Question
 
 ```powershell
 .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
-then ask for an unsupported city. Inspect whether the model reads the error,
-calls **list_destinations**, or explains the supported set.
+You should see one **get_weather** call followed by a short answer containing
+the server's temperature, condition, and humidity. The model chooses the tool;
+the host renders the typed result so the displayed facts stay exact.
 
 ### Guided Code Checkpoints
 
@@ -651,7 +825,7 @@ boundaries:
 2. **Result check:** Identify where successful structured results and text errors
     take different paths.
 3. **Safety check:** Find **MAX_TURNS** and the return statement after the loop.
-    Predict what would happen if the limit were **2** and the model never stopped.
+    Predict what happens if every requested tool returns an error.
     Leave the code unchanged at **6**.
 
 Run the deterministic checks after inspecting the loop:

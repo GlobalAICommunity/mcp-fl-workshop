@@ -5,12 +5,12 @@ This is the whole trick behind every "AI agent" framework, in about forty lines:
     1. Ask the MCP server what tools exist.
     2. Translate those tool schemas into the shape the model API expects.
     3. Send the conversation plus the tool list to the model.
-    4. Run travel tools through MCP and append their results.
-    5. Repeat until the model calls the host-only final_answer tool.
+    4. Run the selected travel tool through MCP.
+    5. Present its structured result without another model completion.
 
 Foundry Local v2 supplies typed native chat sessions. The model, prompts, tool
-calls, and results all remain on the workshop VM. A host-only final_answer
-function gives the loop an explicit, structured stopping signal.
+calls, and results all remain on the workshop VM. The host formats the typed
+tool result directly, keeping the exercise fast and grounded on small models.
 
 Run it:
 
@@ -37,8 +37,7 @@ from model_config import ConfigError, describe, get_local_model  # noqa: E402
 MAX_TURNS = 6
 
 SYSTEM_PROMPT = (
-    "Use one travel tool at a time. Use only tool results; do not invent facts. "
-    "When done, call final_answer alone with a short answer."
+    "Call exactly one travel tool that answers the user. Do not answer in text."
 )
 
 FINAL_ANSWER_TOOL = {
@@ -107,13 +106,31 @@ def tools_for_question(question: str, tools: list[dict]) -> list[dict]:
     }
     if not selected_names:
         return tools
-    selected_names.add("list_destinations")
     return [
         tool
         for tool in tools
         if tool["function"]["name"] in selected_names
-        or tool["function"]["name"] == "final_answer"
     ]
+
+
+def format_tool_result(name: str, result) -> str:
+    """Render typed MCP output without asking a small model to restate facts."""
+    if name == "get_weather" and isinstance(result, dict):
+        return (
+            f"{result['city']}: {result['temperature_c']} C, "
+            f"{result['condition']}, humidity {result['humidity_pct']}%."
+        )
+    if name == "search_flights" and isinstance(result, list) and result:
+        flight = result[0]
+        return (
+            f"Flight {flight['flight_number']} from {flight['origin']} to "
+            f"{flight['destination']} departs at {flight['departs']}, takes "
+            f"{flight['duration_hours']} hours, and costs INR {flight['price_inr']}. "
+            "Fares are fictional."
+        )
+    if name == "list_destinations" and isinstance(result, list):
+        return "Supported cities: " + ", ".join(result) + "."
+    return json.dumps(result, ensure_ascii=True, separators=(",", ":"))
 
 
 async def run(
@@ -125,19 +142,17 @@ async def run(
     llm = chat_client
     if llm is None:
         llm = get_local_model().client
-    llm.settings.tool_choice = {"type": "required"}
+    llm.settings.tool_choice = "required"
 
     transport = mcp_server if mcp_server is not None else server_transport()
     async with Client(transport) as mcp:
-        all_tools = mcp_tools_to_openai(await mcp.list_tools()) + [FINAL_ANSWER_TOOL]
+        all_tools = mcp_tools_to_openai(await mcp.list_tools())
         tools = tools_for_question(question, all_tools)
 
         messages: list[dict] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": question},
         ]
-        first_flight: dict | None = None
-
         for turn in range(1, MAX_TURNS + 1):
             started = time.monotonic()
             try:
@@ -191,26 +206,6 @@ async def run(
 
                 if args is None:
                     output = "Error: arguments were not valid JSON. Try again."
-                elif name == "final_answer":
-                    answer = args.get("answer")
-                    if len(calls) > 1:
-                        output = "Error: call final_answer alone on the next turn."
-                    elif isinstance(answer, str) and answer.strip():
-                        answer = answer.strip()
-                        flight_terms = ("lab ", "depart", "hour", "inr", "fares are fictional.")
-                        if first_flight and not all(
-                            term in answer.lower() for term in flight_terms
-                        ):
-                            answer = (
-                                f"Flight option: {first_flight['flight_number']}, departs "
-                                f"{first_flight['departs']}, duration "
-                                f"{first_flight['duration_hours']} hours, INR "
-                                f"{first_flight['price_inr']}. Fares are fictional.\n\n"
-                                f"{answer}"
-                            )
-                        return answer
-                    else:
-                        output = "Error: final_answer requires a non-empty answer."
                 else:
                     if on_tool_call is None:
                         print(f"  -> calling {name}({args})")
@@ -232,23 +227,8 @@ async def run(
                             else structured
                         )
                         output = json.dumps(compact, separators=(",", ":"))
-                    if name == "search_flights" and not result.is_error:
-                        flights = (
-                            structured.get("result")
-                            if isinstance(structured, dict)
-                            else None
-                        )
-                        if isinstance(flights, list) and flights:
-                            first_flight = flights[0]
                     if not result.is_error:
-                        completed = {name}
-                        if name != "list_destinations":
-                            completed.add("list_destinations")
-                        tools = [
-                            tool
-                            for tool in tools
-                            if tool["function"]["name"] not in completed
-                        ]
+                        return format_tool_result(name, compact)
 
                 messages.append(
                     {"role": "tool", "tool_call_id": call.id, "content": output}
