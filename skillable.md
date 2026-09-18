@@ -377,9 +377,24 @@ on completing your learner server.
 The client and agent in this lesson launch the following reference server from
 [src/solution/travel_server.py](src/solution/travel_server.py). Review how its
 typed return models become MCP output schemas before following the client path.
+This is intentionally more complete than the learner server created in Lesson 3
+at **src/workshop/travel_server.py**. The code below is an exact copy of the
+repository's solution file used by the Lesson 4 commands.
 
 ```python
-"""Bharat travel MCP server - the completed FastMCP 4 implementation."""
+"""Bharat travel MCP server - the completed FastMCP 4 implementation.
+
+FastMCP 4 speaks the 2026-07-28 revision of the Model Context Protocol and
+negotiates older protocol versions when a compatible client needs them.
+
+All data here is fake and generated deterministically from the city name, so the
+server needs no network access and always gives the same answer for the same
+question, which makes it a good thing to demo in front of a room.
+
+Run it directly to serve over stdio:
+
+    python src/solution/travel_server.py
+"""
 
 from __future__ import annotations
 
@@ -394,6 +409,10 @@ mcp = FastMCP(
     "Bharat Travel Desk",
     instructions="Offline fictional India travel data.",
 )
+
+# --------------------------------------------------------------------------
+# Fake data
+# --------------------------------------------------------------------------
 
 DESTINATIONS: dict[str, str] = {
     "bengaluru": "Technology hubs, gardens and a mild plateau climate.",
@@ -412,6 +431,11 @@ CONDITIONS = ["clear", "cloudy", "humid", "light rain", "windy", "hazy"]
 
 
 def _seed(*parts: str) -> int:
+    """Stable pseudo-random seed derived from the inputs.
+
+    Using a hash rather than `random` keeps results reproducible across runs and
+    machines, which matters when you are demoing live.
+    """
     joined = "|".join(parts).lower()
     return int(hashlib.sha256(joined.encode()).hexdigest(), 16)
 
@@ -422,6 +446,11 @@ def _known_city(city: str) -> str:
         known = ", ".join(sorted(DESTINATIONS))
         raise ValueError(f"Unknown city {city!r}. Known cities are: {known}.")
     return key
+
+
+# --------------------------------------------------------------------------
+# Structured output models
+# --------------------------------------------------------------------------
 
 
 class Weather(BaseModel):
@@ -451,6 +480,11 @@ class Flight(BaseModel):
     departs: str
     duration_hours: float
     price_inr: int
+
+
+# --------------------------------------------------------------------------
+# Tools
+# --------------------------------------------------------------------------
 
 
 @mcp.tool
@@ -542,11 +576,21 @@ def search_flights(
     return sorted(flights, key=lambda flight: flight.departs)
 
 
+# --------------------------------------------------------------------------
+# Resource - application-controlled context, not called by the model
+# --------------------------------------------------------------------------
+
+
 @mcp.resource("travel://destinations")
 def destinations_catalog() -> str:
     """The full destination catalogue as human-readable text."""
     lines = [f"- {city.title()}: {blurb}" for city, blurb in sorted(DESTINATIONS.items())]
     return "Destinations this travel service covers:\n" + "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# Prompt - a reusable, user-selected workflow
+# --------------------------------------------------------------------------
 
 
 @mcp.prompt
@@ -839,8 +883,8 @@ Run the deterministic checks after inspecting the loop:
 You can now separate three mechanisms:
 
 - MCP publishes and executes capabilities.
-- Foundry Local chooses a travel tool or the host-only stopping function.
-- The host loop preserves conversation state and connects the two.
+- Foundry Local chooses one relevant travel tool.
+- The host executes the tool and formats its typed result.
 
 Continue to Lesson 5.
 
