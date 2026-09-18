@@ -41,6 +41,14 @@ Get-ChildItem
 
 all workshop commands assume this location.
 
+### 3. If PowerShell Blocks the Script
+
+Allow local scripts to be executed. 
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\workshop.ps1 check
+```
 ### 2. Run the Offline Check
 
 ```powershell
@@ -69,19 +77,6 @@ All good - you are ready for the offline workshop.
 
 the first model load can take a little longer than later calls.
 
-### 3. If PowerShell Blocks the Script
-
-The event image should already allow local scripts. If your terminal reports
-that script execution is disabled, use the workshop's process-only override
-where permitted by your organization's policy:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\workshop.ps1 check
-```
-
-this setting disappears when the terminal closes and does not override Group
-Policy. Ask the facilitator if organizational policy blocks the script.
 
 ### 4. If Any Check Fails
 
