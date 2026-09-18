@@ -308,6 +308,15 @@ Start the browser:
 Open <http://127.0.0.1:7932>, submit `What is the weather in Pune?`, confirm a
 `get_weather` label and grounded answer, then stop Uvicorn with `Ctrl+C`.
 
+### If key-value cache allocation fails
+
+An error that includes `max_length (262144)` indicates that an older workshop
+adapter selected Foundry Local's retained full-context generator. Update the
+workshop checkout and rerun `.\workshop.ps1 check`. The current adapter uses a
+self-contained request that allocates for the prompt plus the 64-token output
+budget. Reinstall requirements only when the package check does not already
+report Foundry Local SDK 2.0.1.
+
 ### If native inference is cancelled
 
 Repeated cancellation near 120 seconds suggests a deadline, but does not

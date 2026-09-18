@@ -92,102 +92,59 @@ class NativeChatClient:
     ) -> CompletionResponse:
         from foundry_local_sdk import (
             ChatSession,
-            MessageItem,
             Request,
-            RequestOptions,
-            SearchOptions,
             TextItem,
             TextItemType,
-            ToolCallItem,
-            ToolChoice,
-            ToolResultItem,
         )
 
-        choice = self.settings.tool_choice
-        if isinstance(choice, dict):
-            choice = choice.get("type")
-        tool_choice = ToolChoice(choice) if choice else None
-        options = RequestOptions(
-            search=SearchOptions(
-                temperature=self.settings.temperature,
-                max_output_tokens=self.settings.max_tokens,
-            ),
-            tool_choice=tool_choice,
-        )
+        payload = {
+            "model": self.model.id,
+            "messages": messages,
+            "max_tokens": self.settings.max_tokens,
+            "temperature": self.settings.temperature,
+        }
+        if tools:
+            payload["tools"] = tools
+        if self.settings.tool_choice:
+            payload["tool_choice"] = self.settings.tool_choice
 
         with ChatSession(self.model) as session:
-            session.set_options(options)
-            for tool in tools or []:
-                function = tool["function"]
-                session.add_tool_definition(
-                    function["name"],
-                    function.get("description", ""),
-                    json.dumps(function["parameters"], separators=(",", ":")),
+            with Request() as request:
+                request.add_item(
+                    TextItem(json.dumps(payload), TextItemType.OPENAI_JSON)
                 )
 
-            with Request() as request:
-                for message in messages:
-                    role = message["role"]
-                    if role == "system":
-                        request.add_item(MessageItem.system(message.get("content", "")))
-                    elif role == "user":
-                        request.add_item(MessageItem.user(message.get("content", "")))
-                    elif role == "assistant":
-                        calls = message.get("tool_calls") or []
-                        if calls:
-                            for call in calls:
-                                function = call["function"]
-                                request.add_item(
-                                    ToolCallItem(
-                                        call["id"],
-                                        function["name"],
-                                        function.get("arguments", "{}"),
-                                    )
-                                )
-                        elif message.get("content"):
-                            request.add_item(
-                                MessageItem.assistant(message["content"])
-                            )
-                    elif role == "tool":
-                        request.add_item(
-                            ToolResultItem(
-                                message["tool_call_id"], message.get("content", "")
-                            )
-                        )
-                    else:
-                        raise ConfigError(f"Unsupported chat role: {role!r}")
-
                 with session.process_request(request) as response:
-                    text_parts: list[str] = []
-                    calls: list[CompletionToolCall] = []
-                    for item in response:
-                        if isinstance(item, TextItem) and item.type != TextItemType.REASONING:
-                            text_parts.append(item.text)
-                        elif isinstance(item, ToolCallItem):
-                            calls.append(
-                                CompletionToolCall(
-                                    id=item.call_id,
-                                    function=CompletionFunction(
-                                        name=item.name, arguments=item.arguments
-                                    ),
-                                )
-                            )
-                    usage = response.get_usage()
-                    finish_reason = response.finish_reason.name.lower()
+                    result = json.loads(response.get_item(0).text)
+
+        choice = result["choices"][0]
+        message = choice["message"]
+        calls = [
+            CompletionToolCall(
+                id=call["id"],
+                type=call.get("type", "function"),
+                function=CompletionFunction(
+                    name=call["function"]["name"],
+                    arguments=call["function"].get("arguments", "{}"),
+                ),
+            )
+            for call in message.get("tool_calls") or []
+        ]
+        usage = result.get("usage") or {}
 
         return CompletionResponse(
             choices=[
                 CompletionChoice(
                     message=CompletionMessage(
-                        content="".join(text_parts), tool_calls=calls
+                        content=message.get("content") or "", tool_calls=calls
                     ),
-                    finish_reason=finish_reason,
+                    finish_reason=choice.get("finish_reason") or "stop",
                 )
             ],
             usage={
-                "prompt_tokens": usage.prompt_tokens,
-                "completion_tokens": usage.completion_tokens,
-                "total_tokens": usage.total_tokens,
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0),
             },
         )
 

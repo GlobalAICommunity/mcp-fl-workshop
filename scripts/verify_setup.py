@@ -171,14 +171,25 @@ def check_local_model() -> None:
     try:
         mc.complete_agent_smoke_test(local_model.client)
     except Exception as exc:  # noqa: BLE001
+        error = str(exc)
+        if "key-value cache buffer" in error.lower() or "max_length (262144)" in error:
+            guidance = (
+                "This checkout is using the full-context chat path. Update the "
+                "workshop files and rerun the check; reinstall requirements only if "
+                "the package check does not report Foundry Local SDK 2.0.1."
+            )
+        else:
+            guidance = (
+                "Close memory-intensive apps and rerun with "
+                "$env:MCP_WORKSHOP_LOG_DIR='.\\foundry-local-logs'. A repeated "
+                "cancellation near 120 seconds means this VM image has not passed "
+                "model acceptance."
+            )
         report(
             BAD,
             "Foundry Local model",
-            str(exc),
-            "Close memory-intensive apps and rerun with "
-            "$env:MCP_WORKSHOP_LOG_DIR='.\\foundry-local-logs'. A repeated "
-            "cancellation near 120 seconds means this VM image has not passed "
-            "model acceptance.",
+            error,
+            guidance,
         )
         return
     report(

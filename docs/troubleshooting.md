@@ -79,6 +79,19 @@ the selected variant is cached.
 If preparation still fails, keep the full traceback and reject the image. Do
 not fall back to a hosted endpoint during an offline event.
 
+## Foundry Local could not allocate the key-value cache buffer
+
+An error that names `max_length (262144)` means the runtime tried to reserve the
+model's entire context window. The current workshop adapter avoids that path by
+sending each completion as a self-contained `OPENAI_JSON` request, which bounds
+the cache to the prompt plus `MCP_WORKSHOP_MAX_TOKENS`.
+
+Update the workshop checkout and rerun `.\workshop.ps1 check`. If its package
+check already reports Foundry Local SDK 2.0.1, do not reinstall the requirements;
+the fix is in [src/model_config.py](../src/model_config.py), not a newer package.
+Setting `MCP_WORKSHOP_MAX_TOKENS` alone does not fix an old adapter that still
+uses retained typed message items.
+
 ## Foundry Local reports Operation was cancelled
 
 The preparation and readiness smoke tests retry one cancellation for each

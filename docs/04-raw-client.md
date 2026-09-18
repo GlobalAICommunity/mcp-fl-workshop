@@ -145,6 +145,9 @@ model call: MCP is working before any agent behavior is added.
 `qwen3.5-4b` and selects its CPU variant. It rejects
 unknown, non-tool-capable, or uncached models. If needed, it loads the cached
 model and returns the workshop adapter around a typed native `ChatSession`.
+Each completion is sent as a self-contained `OPENAI_JSON` item so the native
+runtime sizes its key-value cache for the prompt plus the configured output
+budget instead of reserving the model's entire context window.
 
 The image builder performed the download earlier. Open
 [src/solution/agent_raw.py](../src/solution/agent_raw.py) and find the start of
@@ -177,12 +180,12 @@ response = await asyncio.to_thread(
 
 No local HTTP endpoint is required.
 
-Foundry Local SDK 2.0.1 returns typed `ToolCallItem` values for this model when
-`tool_choice` is `required`. The workshop adapter translates those values to the
-small response shape used by this lesson. The agent supplies the four MCP travel
-tools plus one host-only `final_answer` function. The model chooses a travel
-tool while it needs data and calls `final_answer` when it is ready to stop. That
-last function is handled by the host and is never sent to the MCP server.
+Foundry Local SDK 2.0.1 returns an OpenAI-compatible JSON response when
+`tool_choice` is `required`. The workshop adapter translates that response to
+the small shape used by this lesson. The agent supplies the four MCP travel tools
+plus one host-only `final_answer` function. The model chooses a travel tool while
+it needs data and calls `final_answer` when it is ready to stop. That last
+function is handled by the host and is never sent to the MCP server.
 
 ## The schema adapter
 

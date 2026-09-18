@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -29,6 +30,7 @@ from model_config import (  # noqa: E402
     ChatSettings,
     DEFAULT_MODEL,
     ConfigError,
+    NativeChatClient,
     complete_agent_smoke_test,
     complete_smoke_test,
     get_local_model,
@@ -393,6 +395,114 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIs(caught.exception.__cause__, failure)
         client.complete_chat.assert_called_once()
+
+    def test_native_client_uses_bounded_openai_json_request(self) -> None:
+        captured = {}
+
+        class FakeTextItem:
+            def __init__(self, text, item_type):
+                captured["payload"] = json.loads(text)
+                captured["item_type"] = item_type
+
+        class FakeRequest:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                pass
+
+            def add_item(self, item):
+                captured["item"] = item
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                pass
+
+            def get_item(self, index):
+                self.index = index
+                return SimpleNamespace(
+                    text=json.dumps(
+                        {
+                            "choices": [
+                                {
+                                    "finish_reason": "tool_calls",
+                                    "message": {
+                                        "content": None,
+                                        "tool_calls": [
+                                            {
+                                                "id": "call-1",
+                                                "type": "function",
+                                                "function": {
+                                                    "name": "get_weather",
+                                                    "arguments": '{"city":"Pune"}',
+                                                },
+                                            }
+                                        ],
+                                    },
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 10,
+                                "completion_tokens": 4,
+                                "total_tokens": 14,
+                            },
+                        }
+                    )
+                )
+
+        response = FakeResponse()
+
+        class FakeSession:
+            def __init__(self, model):
+                captured["model"] = model
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                pass
+
+            def process_request(self, request):
+                captured["request"] = request
+                return response
+
+        item_type = object()
+        model = SimpleNamespace(id="qwen3.5-4b-cpu")
+        client = NativeChatClient(model, 64)
+        client.settings.tool_choice = {"type": "required"}
+        messages = [{"role": "user", "content": "Weather in Pune?"}]
+        tools = [{"type": "function", "function": {"name": "get_weather"}}]
+
+        with patch("foundry_local_sdk.ChatSession", FakeSession), patch(
+            "foundry_local_sdk.Request", FakeRequest
+        ), patch("foundry_local_sdk.TextItem", FakeTextItem), patch(
+            "foundry_local_sdk.TextItemType",
+            SimpleNamespace(OPENAI_JSON=item_type),
+        ):
+            completion = client.complete_chat(messages, tools)
+
+        self.assertIs(captured["model"], model)
+        self.assertIs(captured["item_type"], item_type)
+        self.assertEqual(
+            captured["payload"],
+            {
+                "model": model.id,
+                "messages": messages,
+                "max_tokens": 64,
+                "temperature": 0.0,
+                "tools": tools,
+                "tool_choice": {"type": "required"},
+            },
+        )
+        self.assertEqual(completion.choices[0].message.content, "")
+        self.assertEqual(
+            completion.choices[0].message.tool_calls[0].function.name,
+            "get_weather",
+        )
+        self.assertEqual(completion.usage["total_tokens"], 14)
 
     def test_model_output_budget(self) -> None:
         for value, expected in (("", 64), ("128", 128), (" 64 ", 64)):
