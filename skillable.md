@@ -49,11 +49,6 @@ Allow local scripts to be executed.
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\workshop.ps1 check
 ```
-### 3. Run the Offline Check
-
-```powershell
-.\workshop.ps1 check
-```
 
 the check does not download anything. It verifies:
 
@@ -78,7 +73,7 @@ All good - you are ready for the offline workshop.
 the first model load can take a little longer than later calls.
 
 
-### 4. If Any Check Fails
+### 3. If Any Check Fails
 
 Do not install packages or download a model during the event. Record any issues on the provided repo as issues. The repo is available at:
 !IMAGE[qrcode-mcp.png](instructions358450/qrcode-mcp.png)
@@ -585,9 +580,7 @@ a host-side optimization applied only to the copy sent to the model.
 Before the turn loop, **tools_for_question()** uses small keyword groups to keep
 likely tools plus **final_answer**. For example, a weather question does not pay
 the token cost of the flight schema. If no hint matches, it keeps every tool so
-unusual wording remains recoverable. The host also retains
-**list_destinations** with every matched travel tool so an unsupported city can
-be corrected.
+unusual wording remains recoverable.
 
 ### The Complete Loop
 
@@ -613,9 +606,7 @@ text. That lets the next turn correct a request instead of crashing the host.
 .\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
 ```
 
-the words **flight** and **pack** retain **search_flights** and
-**get_forecast**, while unrelated schemas are omitted. You should see one or
-more **-> calling ...** lines followed by a concise answer.
+you should see one or more **-> calling ...** lines followed by a concise answer.
 Flight fares are fictional and shown in INR. Exact wording and call order can
 vary because the model is generative.
 
@@ -625,10 +616,8 @@ Try a smaller request:
 .\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
-this request retains **get_weather**, **list_destinations**, and
-**final_answer** only. Then ask for an unsupported city. Inspect whether the
-model reads the error, calls **list_destinations**, or explains the supported
-set.
+then ask for an unsupported city. Inspect whether the model reads the error,
+calls **list_destinations**, or explains the supported set.
 
 ### Guided Code Checkpoints
 
