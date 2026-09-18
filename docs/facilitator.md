@@ -133,7 +133,7 @@ It keeps prompts, tool requests, and results on the VM and avoids accounts or
 network dependencies. The native SDK also avoids managing a separate model
 server port.
 
-**Why `qwen3.5-4b-generic-cpu`?**
+**Why `qwen3.5-9b` on CPU?**
 
 This CPU model supports tool calling, avoids dependence on CUDA or WebGPU,
 and completes within the native request window on the workshop CPU. The 2B

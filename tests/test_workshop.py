@@ -343,7 +343,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
     def test_selects_cpu_variant_even_when_gpu_variant_is_first(self) -> None:
         cpu = SimpleNamespace(
-            id="qwen3.5-4b-generic-cpu:1",
+            id="qwen3.5-9b-generic-cpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="CPU", execution_provider="CPUExecutionProvider"
@@ -351,7 +351,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ),
         )
         gpu = SimpleNamespace(
-            id="qwen3.5-4b-generic-gpu:1",
+            id="qwen3.5-9b-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -370,7 +370,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
     def test_rejects_model_without_cpu_variant_and_lists_catalog_variants(self) -> None:
         gpu = SimpleNamespace(
-            id="qwen3.5-4b-generic-gpu:1",
+            id="qwen3.5-9b-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -385,7 +385,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaisesRegex(
             ConfigError,
-            r"no CPU variant.*qwen3\.5-4b-generic-gpu:1.*WebGpuExecutionProvider",
+            r"no CPU variant.*qwen3\.5-9b-generic-gpu:1.*WebGpuExecutionProvider",
         ):
             select_cpu_variant(model)
 
@@ -424,7 +424,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
                 model = manager.instance.catalog.get_model.return_value
                 cpu = SimpleNamespace(
-                    id="qwen3.5-4b-generic-cpu:1",
+                    id="qwen3.5-9b-generic-cpu:1",
                     info=SimpleNamespace(
                         runtime=SimpleNamespace(
                             device_type="CPU",
@@ -438,6 +438,29 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
                 manager.instance.catalog.get_model.assert_called_once_with(DEFAULT_MODEL)
                 model.select_variant.assert_called_once_with(cpu)
                 model.load.assert_not_called()
+
+    def test_model_override_resolves_alias_then_selects_cpu_variant(self) -> None:
+        alias = "qwen3.5-2b"
+        with patch.dict(
+            os.environ, {"MCP_WORKSHOP_MODEL": alias}
+        ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
+            model = manager.instance.catalog.get_model.return_value
+            cpu = SimpleNamespace(
+                id="qwen3.5-2b-generic-cpu:1",
+                info=SimpleNamespace(
+                    runtime=SimpleNamespace(
+                        device_type="CPU",
+                        execution_provider="CPUExecutionProvider",
+                    )
+                ),
+            )
+            model.variants = [cpu]
+
+            local_model = get_local_model()
+
+            self.assertEqual(local_model.alias, alias)
+            manager.instance.catalog.get_model.assert_called_once_with(alias)
+            model.select_variant.assert_called_once_with(cpu)
 
     def test_model_output_budget_rejects_invalid_values(self) -> None:
         for value in ("0", "-1", "1.5", "invalid"):

@@ -48,12 +48,11 @@ def main() -> int:
     if model is None:
         print(f"Unknown Foundry Local model alias: {args.model}", file=sys.stderr)
         return 1
-    if args.model == DEFAULT_MODEL:
-        try:
-            select_cpu_variant(model)
-        except ConfigError as exc:
-            print(exc, file=sys.stderr)
-            return 1
+    try:
+        select_cpu_variant(model)
+    except ConfigError as exc:
+        print(exc, file=sys.stderr)
+        return 1
     if not model.supports_tool_calling:
         print(f"Model {args.model} does not support tool calling.", file=sys.stderr)
         return 1

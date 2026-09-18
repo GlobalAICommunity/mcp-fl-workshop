@@ -16,7 +16,7 @@ or the cached model. The check verifies these prerequisites; it does not create
 or install them.
 
 All checks must pass with networking disabled. The model check must load cached
-`qwen3.5-4b-generic-cpu` and produce a `get_weather` tool request.
+the CPU variant of `qwen3.5-9b` and produce a `get_weather` tool request.
 
 ## 1. Create the virtual environment first
 
@@ -222,7 +222,7 @@ Still online, run:
 The preparation script:
 
 1. initializes the Foundry Local manager
-2. resolves `qwen3.5-4b-generic-cpu` through the catalog
+2. resolves `qwen3.5-9b` through the catalog and selects its CPU variant
 3. explicitly selects the highest-priority CPU variant
 4. verifies tool-calling support
 5. downloads that concrete model if absent
@@ -379,7 +379,7 @@ Before taking the final snapshot or template:
 - keep the prepared attendee profile intact
 - verify trusted scripts are unblocked and the approved terminal setup works
 	after reboot; a process-only execution policy is not saved in the image
-- ensure `.env` is absent or contains only `MCP_WORKSHOP_MODEL=qwen3.5-4b-generic-cpu`
+- ensure `.env` is absent or contains only `MCP_WORKSHOP_MODEL=qwen3.5-9b`
 - open VS Code at the repository root with a PowerShell 7 terminal profile
 - record the repository revision and image checksum
 
@@ -417,7 +417,7 @@ For each image release, record:
 | Python version | |
 | FastMCP version | `4.0.0` |
 | Foundry Local SDK | `1.2.4` |
-| Model catalog name and concrete ID | `qwen3.5-4b-generic-cpu` / record the ID printed by `prepare-vm` |
+| Model alias and concrete ID | `qwen3.5-9b` / record the ID printed by `prepare-vm` |
 | VM hardware profile | |
 | Online preparation date | |
 | Offline acceptance date and tester | |

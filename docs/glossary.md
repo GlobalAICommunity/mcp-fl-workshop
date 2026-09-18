@@ -102,10 +102,10 @@ An on-device model runtime and SDK. The workshop uses the WinML Python package,
 loads a model from the local catalog and cache, and calls its native chat client
 without a cloud endpoint.
 
-## Model catalog name
+## Model alias
 
-A catalog name such as `qwen3.5-4b-generic-cpu`. This workshop resolves
-the name to a versioned CPU model ID.
+A hardware-independent catalog name such as `qwen3.5-9b`. This workshop resolves
+the alias and explicitly selects its CPU variant.
 
 ## Prompt injection
 

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3.5-4b-generic-cpu"
+DEFAULT_MODEL = "qwen3.5-9b"
 
 
 class ConfigError(RuntimeError):
@@ -207,8 +207,7 @@ def get_local_model() -> LocalModel:
             f"Foundry Local does not know model alias {alias!r}. "
             "The facilitator must rebuild the VM with scripts/prepare_vm.py."
         )
-    if alias == DEFAULT_MODEL:
-        select_cpu_variant(model)
+    select_cpu_variant(model)
     if not model.supports_tool_calling:
         raise ConfigError(f"Foundry Local model {alias!r} does not support tool calling.")
     if not model.is_cached:
