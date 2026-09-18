@@ -222,16 +222,16 @@ Still online, run:
 The preparation script:
 
 1. initializes the Foundry Local manager
- 2. resolves `qwen2.5-1.5b` through the catalog and selects its CPU variant
+2. resolves `qwen2.5-1.5b` through the catalog and selects its CPU variant
 3. explicitly selects the highest-priority CPU variant
 4. verifies tool-calling support
 5. downloads that concrete model if absent
- 6. loads it and forces a structured `get_weather(Pune)` request
+6. loads it and forces a structured `get_weather(Pune)` request
 
 Do not interrupt a download. The command must end with:
 
 ```text
- Tool-calling smoke test passed: get_weather(Pune)
+Tool-calling smoke test passed: get_weather(Pune)
 VM model preparation complete. Run scripts/verify_setup.py with networking off.
 ```
 
@@ -281,7 +281,7 @@ PowerShell 7 session, run:
 .\workshop.ps1 test
 .\workshop.ps1 raw
 .\workshop.ps1 client
- .\workshop.ps1 agent "What is the weather in Pune?"
+.\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
 Alternatively, select PowerShell 7 explicitly for the readiness check:
@@ -318,15 +318,15 @@ report Foundry Local SDK 2.0.1.
 
 ### If native inference is cancelled
 
- Repeated cancellation near 120 seconds suggests a deadline, but does not
- identify its source. A failed tool-selection completion is not a
+Repeated cancellation near 120 seconds suggests a deadline, but does not
+identify its source. A failed tool-selection completion is not a
  script-permission or missing-model error. Capture native debug logs
 and test a smaller output budget in the same PowerShell session:
 
 ```powershell
 $env:MCP_WORKSHOP_LOG_DIR = "$env:TEMP\MCP-Workshop-Logs"
 $env:MCP_WORKSHOP_MAX_TOKENS = '64'
- .\workshop.ps1 agent "What is the weather in Pune?"
+.\workshop.ps1 agent "What is the weather in Pune?"
 Get-ChildItem -LiteralPath $env:MCP_WORKSHOP_LOG_DIR -File -Recurse |
 	ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 80 }
 ```
@@ -335,8 +335,8 @@ The default output limit is 64 tokens per completion. On an older workshop
 checkout that still defaults to 256, set **MCP_WORKSHOP_MAX_TOKENS** to **64**
 before retrying. The override is not a timeout extension. A smaller budget can
 truncate tool arguments or omit requested content.
- Check that the answer contains the exact typed Pune weather values; an
- incomplete answer does not pass acceptance. Record elapsed time and CPU/memory usage on
+Check that the answer contains the exact typed Pune weather values; an
+incomplete answer does not pass acceptance. Record elapsed time and CPU/memory usage on
 the failing VM. Debug logs may contain prompts and tool results; review them
 before sharing and remove diagnostic logs before sealing the image.
 
@@ -360,7 +360,7 @@ if needed. Do not repeat package installation or model downloads. Run:
 ```powershell
 .\workshop.ps1 check
 .\workshop.ps1 raw tools/call '{"name":"get_weather","arguments":{"city":"Pune"}}'
- .\workshop.ps1 agent "What is the weather in Pune?"
+.\workshop.ps1 agent "What is the weather in Pune?"
 ```
 
 Acceptance requires:
