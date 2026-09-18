@@ -45,6 +45,10 @@ def report(status: str, label: str, detail: str = "", fix: str = "") -> None:
         warnings.append(f"{label}: {fix or detail}")
 
 
+def progress(label: str, detail: str) -> None:
+    print(f"[ .... ] {label} - {detail}", flush=True)
+
+
 def run_in(python: Path, code: str) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
@@ -161,12 +165,20 @@ def check_local_model() -> None:
         report(BAD, "Foundry Local model", f"config error: {exc}")
         return
 
+    progress(
+        "Foundry Local model",
+        "locating and loading the cached CPU model; this can take several minutes",
+    )
     try:
         local_model = mc.get_local_model()
     except mc.ConfigError as exc:
         report(BAD, "Foundry Local model", str(exc))
         return
 
+    progress(
+        "Foundry Local model",
+        "model loaded; running two CPU completions",
+    )
     local_model.client.settings.tool_choice = {"type": "required"}
     try:
         mc.complete_agent_smoke_test(local_model.client)

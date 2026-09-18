@@ -190,6 +190,11 @@ def complete_smoke_test(
     from foundry_local_sdk.exception import FoundryLocalException
 
     for attempt in range(2):
+        print(
+            f"[ .... ] Foundry Local model - {stage}, attempt {attempt + 1} of 2",
+            file=sys.stderr,
+            flush=True,
+        )
         started = time.monotonic()
         try:
             return client.complete_chat(messages, tools)
@@ -204,6 +209,7 @@ def complete_smoke_test(
             print(
                 f"{stage} was cancelled after {elapsed:.1f}s; retrying once.",
                 file=sys.stderr,
+                flush=True,
             )
     raise AssertionError("unreachable")
 
