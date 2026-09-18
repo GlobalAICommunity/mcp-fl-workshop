@@ -85,18 +85,38 @@ The preparation and readiness smoke tests retry one cancellation for each
 idempotent model-only completion. They do not retry normal agent turns, where
 replaying a tool request could repeat an action.
 
-If the retry also fails, close memory-intensive workloads and rerun preparation
-while online with native logging enabled:
+The failure names the model completion that failed:
+
+- `get_weather completion`: the model could not complete the initial tool-call
+	request.
+- `post-tool final_answer completion`: the initial tool call succeeded, but the
+	model could not finish after receiving the smoke test's fixed weather result.
+
+The elapsed time is for the reported attempt, not the whole readiness check.
+`on attempt 2` means the single retry also failed. Timing alone does not identify
+the cause of a native cancellation.
+
+If the retry also fails, close memory-intensive workloads and rerun the offline
+readiness check with native logging enabled:
 
 ```powershell
 $env:MCP_WORKSHOP_LOG_DIR = '.\foundry-local-logs'
-.\workshop.ps1 prepare-vm
+.\workshop.ps1 check
 ```
 
-Record the concrete model ID printed by the script and inspect the generated
-logs. A persistent cancellation means the selected `qwen3.5-0.8b`
-variant has not passed acceptance on that VM; verify available system memory and
-CPU load before sealing the image.
+Record the complete failed line, including the stage, elapsed time, and attempt
+number, and inspect the generated logs. Review logs for sensitive information
+before sharing them. Disable debug logging when finished:
+
+```powershell
+Remove-Item Env:\MCP_WORKSHOP_LOG_DIR
+```
+
+A persistent cancellation means the selected model variant has not passed
+acceptance on that VM. The facilitator should verify available memory and CPU
+load and replace the VM if needed. Image builders can rerun
+`.\workshop.ps1 prepare-vm` while online before sealing a replacement image.
+Do not use `--skip-model` to accept an image with failing inference.
 
 ## The model is cached but emits no tool call
 

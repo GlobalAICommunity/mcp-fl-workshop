@@ -139,6 +139,30 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(second_messages[-1]["tool_call_id"], "weather-1")
         self.assertEqual(second_tools[0]["function"]["name"], "final_answer")
 
+    def test_agent_smoke_test_identifies_weather_cancellation(self) -> None:
+        cancellation = FoundryLocalException(
+            "Error during chat completion: Operation was cancelled"
+        )
+        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
+        client.complete_chat.side_effect = [cancellation, cancellation]
+
+        with (
+            patch("model_config.time.monotonic", side_effect=[0, 120, 121, 241]),
+            patch("model_config.print") as report,
+            self.assertRaisesRegex(
+                ConfigError,
+                r"get_weather completion failed after 120\.0s on attempt 2",
+            ) as caught,
+        ):
+            complete_agent_smoke_test(client)
+
+        report.assert_called_once_with(
+            "get_weather completion was cancelled after 120.0s; retrying once.",
+            file=sys.stderr,
+        )
+        self.assertIs(caught.exception.__cause__, cancellation)
+        self.assertEqual(client.complete_chat.call_count, 2)
+
     def test_agent_smoke_test_identifies_post_tool_cancellation(self) -> None:
         first_call = SimpleNamespace(
             id="weather-1",

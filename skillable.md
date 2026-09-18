@@ -78,6 +78,16 @@ the first model load can take a little longer than later calls.
 Do not install packages or download a model during the event. Record any issues on the provided repo as issues. The repo is available at:
 !IMAGE[qrcode-mcp.png](instructions358450/qrcode-mcp.png)
 
+If the model reports **Operation was cancelled**, record the full failed line,
+including the stage, elapsed time, and attempt number. **get_weather completion**
+identifies the initial model request; **post-tool final_answer completion**
+identifies the request after the test supplies a weather result.
+
+Ask the facilitator for help if the retry also fails. The VM has not passed
+readiness, even if the other four checks succeed. Facilitators can follow the
+[cancellation troubleshooting steps](docs/troubleshooting.md#foundry-local-reports-operation-was-cancelled)
+to collect logs without downloading anything.
+
 
 ### Checkpoint
 
