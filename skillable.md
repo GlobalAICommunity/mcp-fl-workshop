@@ -53,7 +53,7 @@ the check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in **.venv**.
 - The FastMCP server and protocol negotiation.
 - The browser application import.
-- A cached **qwen3-vl-2b-instruct** model that can emit a tool call.
+- A cached **qwen3.5-0.8b** model that can emit a tool call.
 
 A ready image ends with output similar to:
 
@@ -62,7 +62,7 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
-[  ok  ] Foundry Local model - qwen3-vl-2b-instruct loaded from cache and emitted get_weather
+[  ok  ] Foundry Local model - qwen3.5-0.8b loaded from cache and emitted get_weather
 
 All good - you are ready for the offline workshop.
 ```
@@ -225,7 +225,7 @@ from pydantic import BaseModel, Field
 
 mcp = FastMCP(
     "My Bharat Travel Desk",
-    instructions="Use these fictional results only for the workshop.",
+    instructions="Offline fictional India travel data.",
 )
 
 WEATHER = {
@@ -243,15 +243,15 @@ class Weather(BaseModel):
 
 @mcp.tool
 def list_destinations() -> list[str]:
-    """List the Indian cities this lab supports."""
+    """List supported cities."""
     return sorted(WEATHER)
 
 
 @mcp.tool
 def get_weather(
-    city: Annotated[str, Field(description='Indian city, for example "Pune".')],
+    city: Annotated[str, Field(description="Supported city name.")],
 ) -> Weather:
-    """Get fictional current weather for a supported city."""
+    """Get today's fictional weather."""
     key = city.strip().lower()
     if key not in WEATHER:
         raise ValueError(f"Unknown city {city!r}. Try: {', '.join(sorted(WEATHER))}.")
@@ -292,8 +292,10 @@ if __name__ == "__main__":
 | Pydantic return model | Output schema and structured content |
 | Decorator | Primitive registration |
 
-Descriptions influence model behavior, so write them as precise operational
-instructions. Type validation is useful, but it is not authorization.
+Descriptions influence model behavior. For a small local model, keep each one
+short and discriminative: say what makes the tool different, and leave rules to
+types and validation. Repeated prose increases every model request. Type
+validation is useful, but it is not authorization.
 
 ### 3. Compile the Server
 
@@ -500,7 +502,7 @@ model call: MCP is working before any agent behavior is added.
 ### Part B: Connect the Local Model
 
 [src/model_config.py](src/model_config.py) asks the Foundry Local singleton for
-the hardware-independent alias **qwen3-vl-2b-instruct**, then explicitly selects the
+the hardware-independent alias **qwen3.5-0.8b**, then explicitly selects the
 highest-priority CPU variant exposed by the catalog.
 It rejects unknown, accelerator-only, non-tool-capable, or uncached models. If needed,
 it loads the cached model and returns its native chat client.
@@ -536,35 +538,43 @@ response = await asyncio.to_thread(
 
 no local HTTP endpoint is required.
 
-Foundry Local SDK 1.2.4 reliably returns structured calls for this model when
-**tool_choice** is **required**. The agent therefore supplies the four MCP travel
-tools plus one host-only **final_answer** function. The model chooses a travel
-tool while it needs data and calls **final_answer** when it is ready to stop. That
-last function is handled by the host and is never sent to the MCP server.
+Foundry Local SDK 1.2.4 returns structured calls for this model when
+**tool_choice** is **required**. The host first filters the four MCP travel tools
+to those relevant to the question, then adds one host-only **final_answer**
+function. Ambiguous questions retain all tools. The model chooses a travel tool
+while it needs data and calls **final_answer** when it is ready to stop. That last
+function is handled by the host and is never sent to the MCP server.
 
 ### The Schema Adapter
 
 MCP and model tool calling both use JSON Schema, but their outer objects differ.
-The adapter in [src/solution/agent_raw.py](src/solution/agent_raw.py) is
-deliberately small:
+The adapter in [src/solution/agent_raw.py](src/solution/agent_raw.py) also strips
+generated schema labels that do not help the model choose arguments:
 
 **File:** [src/solution/agent_raw.py](src/solution/agent_raw.py)  
 **Find:** **mcp_tools_to_openai()**.
 
 ```python
-def mcp_tools_to_openai(tools) -> list[dict]:
-    """Translate MCP tool definitions into OpenAI `tools` entries.
+def compact_schema(value):
+    if isinstance(value, dict):
+        return {
+            key: compact_schema(item)
+            for key, item in value.items()
+            if key not in {"title", "additionalProperties"}
+        }
+    if isinstance(value, list):
+        return [compact_schema(item) for item in value]
+    return value
 
-    This is the only real 'glue' in the whole loop. Python exposes
-    `input_schema`; the JSON field on the wire remains `inputSchema`.
-    """
+
+def mcp_tools_to_openai(tools) -> list[dict]:
     return [
         {
             "type": "function",
             "function": {
                 "name": tool.name,
                 "description": tool.description or "",
-                "parameters": tool.input_schema,
+                "parameters": compact_schema(tool.input_schema),
             },
         }
         for tool in tools
@@ -572,7 +582,15 @@ def mcp_tools_to_openai(tools) -> list[dict]:
 ```
 
 the Python property is **input_schema**; the MCP JSON field on the wire is
-**inputSchema**.
+**inputSchema**. MCP discovery still returns the complete schema. Compaction is
+a host-side optimization applied only to the copy sent to the model.
+
+### Route Only Relevant Tools
+
+Before the turn loop, **tools_for_question()** uses small keyword groups to keep
+likely tools plus **final_answer**. For example, a weather question does not pay
+the token cost of the flight schema. If no hint matches, it keeps every tool so
+unusual wording remains recoverable.
 
 ### The Complete Loop
 
@@ -583,8 +601,8 @@ subtle failures:
 - Keep the assistant turn and its structured tool requests.
 - Omit duplicate raw **<tool_call>** markup when structured calls are present.
 - Attach every tool result to the matching **tool_call_id**.
-- Serialize **result.structured_content** for the model instead of parsing JSON
-    back out of a text block.
+- Unwrap a sole **result** envelope and serialize the smaller structured value
+    for the model instead of parsing JSON back out of a text block.
 - If a flight answer omits required fields, insert them from the first
     structured flight result instead of starting another slow model turn.
 - Cap the loop with **MAX_TURNS**.

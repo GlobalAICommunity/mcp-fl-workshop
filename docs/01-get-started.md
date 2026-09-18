@@ -32,7 +32,7 @@ The check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in `.venv`
 - the FastMCP server and protocol negotiation
 - the browser application import
-- a cached `qwen3-vl-2b-instruct` model that can emit a tool call
+- a cached `qwen3.5-0.8b` model that can emit a tool call
 
 A ready image ends with output similar to:
 
@@ -41,7 +41,7 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
-[  ok  ] Foundry Local model - qwen3-vl-2b-instruct loaded from cache and emitted get_weather
+[  ok  ] Foundry Local model - qwen3.5-0.8b loaded from cache and emitted get_weather
 
 All good - you are ready for the offline workshop.
 ```

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3-vl-2b-instruct"
+DEFAULT_MODEL = "qwen3.5-0.8b"
 
 
 class ConfigError(RuntimeError):

@@ -104,7 +104,7 @@ without a cloud endpoint.
 
 ## Model alias
 
-A hardware-independent catalog name such as `qwen3-vl-2b-instruct`. This workshop resolves
+A hardware-independent catalog name such as `qwen3.5-0.8b`. This workshop resolves
 the alias and lets Foundry Local select the best variant for the VM hardware.
 
 ## Prompt injection

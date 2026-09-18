@@ -133,12 +133,12 @@ It keeps prompts, tool requests, and results on the VM and avoids accounts or
 network dependencies. The native SDK also avoids managing a separate model
 server port.
 
-**Why `qwen3-vl-2b-instruct` on CPU?**
+**Why `qwen3.5-0.8b` on CPU?**
 
-This compact model supports tool calling and avoids dependence on CUDA or
-WebGPU. The workshop explicitly selects its CPU variant, so image preparation
-and attendee validation must use representative CPU and memory resources. Image
-acceptance, not catalog metadata alone, is the final proof.
+This compact model supports tool calling, avoids dependence on CUDA or WebGPU,
+and completes within the native request window on the workshop CPU. The 2B
+multimodal model exceeded that window during image acceptance. Preparation and
+attendee validation must still use representative CPU and memory resources.
 
 **Is a local model automatically secure?**
 

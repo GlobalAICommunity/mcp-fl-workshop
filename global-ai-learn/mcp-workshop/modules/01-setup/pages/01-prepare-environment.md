@@ -9,7 +9,7 @@ estimatedMinutes: 5
 
 The workshop VM already contains the repository, Python 3.11 or newer, `.venv`,
 FastMCP 4.0.0, Foundry Local SDK 1.2.4, and the cached CPU variant
-of model alias `qwen3-vl-2b-instruct`.
+of model alias `qwen3.5-0.8b`.
 
 Open the repository in VS Code and create a PowerShell terminal. Confirm the
 current directory contains `workshop.ps1`, `docs`, and `src`:

@@ -95,7 +95,7 @@ $env:MCP_WORKSHOP_LOG_DIR = '.\foundry-local-logs'
 ```
 
 Record the concrete model ID printed by the script and inspect the generated
-logs. A persistent cancellation means the selected `qwen3-vl-2b-instruct`
+logs. A persistent cancellation means the selected `qwen3.5-0.8b`
 variant has not passed acceptance on that VM; verify available system memory and
 CPU load before sealing the image.
 

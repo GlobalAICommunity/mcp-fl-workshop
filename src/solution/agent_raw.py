@@ -39,31 +39,20 @@ from model_config import ConfigError, describe, get_local_model  # noqa: E402
 MAX_TURNS = 6
 
 SYSTEM_PROMPT = (
-    "You are a concise India travel lab assistant. Use the provided tools for "
-    "weather and fictional flight questions. Only cities returned by "
-    "list_destinations are supported. Base every claim on tool results. If you "
-    "use search_flights, include a returned flight number, departure time, "
-    "duration, INR price, and the exact sentence 'Fares are fictional.' When "
-    "you have enough information, call final_answer with concise plain prose. "
-    "Call final_answer alone, never in the same response as a travel tool."
+    "Use one travel tool at a time. Use only tool results; do not invent facts. "
+    "When done, call final_answer alone with a short answer."
 )
 
 FINAL_ANSWER_TOOL = {
     "type": "function",
     "function": {
         "name": "final_answer",
-        "description": (
-            "Return a concise response grounded in completed travel tools. If "
-            "flights were searched, include one returned flight number, "
-            "departure time, duration, INR price, and 'Fares are fictional.' "
-            "Call this tool alone."
-        ),
+        "description": "Finish with a short answer based only on tool results.",
         "parameters": {
             "type": "object",
             "properties": {
                 "answer": {
                     "type": "string",
-                    "description": "Concise answer containing relevant returned facts.",
                 }
             },
             "required": ["answer"],
@@ -71,6 +60,26 @@ FINAL_ANSWER_TOOL = {
         },
     },
 }
+
+TOOL_HINTS = {
+    "list_destinations": ("cities", "city", "destination", "where", "supported"),
+    "get_weather": ("weather", "temperature", "rain", "humid", "today"),
+    "get_forecast": ("forecast", "pack", "plan", "trip", "night", "days"),
+    "search_flights": ("flight", "fare", "fly", "route", "depart"),
+}
+
+
+def compact_schema(value):
+    """Remove generated schema labels that consume tokens without guiding calls."""
+    if isinstance(value, dict):
+        return {
+            key: compact_schema(item)
+            for key, item in value.items()
+            if key not in {"title", "additionalProperties"}
+        }
+    if isinstance(value, list):
+        return [compact_schema(item) for item in value]
+    return value
 
 
 def mcp_tools_to_openai(tools) -> list[dict]:
@@ -85,10 +94,27 @@ def mcp_tools_to_openai(tools) -> list[dict]:
             "function": {
                 "name": tool.name,
                 "description": tool.description or "",
-                "parameters": tool.input_schema,
+                "parameters": compact_schema(tool.input_schema),
             },
         }
         for tool in tools
+    ]
+
+
+def tools_for_question(question: str, tools: list[dict]) -> list[dict]:
+    """Keep only likely tools; use all travel tools when intent is ambiguous."""
+    text = question.lower()
+    selected_names = {
+        name for name, hints in TOOL_HINTS.items() if any(hint in text for hint in hints)
+    }
+    if not selected_names:
+        return tools
+    selected_names.add("list_destinations")
+    return [
+        tool
+        for tool in tools
+        if tool["function"]["name"] in selected_names
+        or tool["function"]["name"] == "final_answer"
     ]
 
 
@@ -105,7 +131,8 @@ async def run(
 
     transport = mcp_server if mcp_server is not None else server_transport()
     async with Client(transport) as mcp:
-        tools = mcp_tools_to_openai(await mcp.list_tools()) + [FINAL_ANSWER_TOOL]
+        all_tools = mcp_tools_to_openai(await mcp.list_tools()) + [FINAL_ANSWER_TOOL]
+        tools = tools_for_question(question, all_tools)
 
         messages: list[dict] = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -200,7 +227,13 @@ async def run(
                             if hasattr(block, "text")
                         )
                     else:
-                        output = json.dumps(structured, separators=(",", ":"))
+                        compact = (
+                            structured["result"]
+                            if isinstance(structured, dict)
+                            and set(structured) == {"result"}
+                            else structured
+                        )
+                        output = json.dumps(compact, separators=(",", ":"))
                     if name == "search_flights" and not result.is_error:
                         flights = (
                             structured.get("result")

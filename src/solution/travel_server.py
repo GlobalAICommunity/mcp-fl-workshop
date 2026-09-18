@@ -23,11 +23,7 @@ from pydantic import BaseModel, Field
 
 mcp = FastMCP(
     "Bharat Travel Desk",
-    instructions=(
-        "A deterministic India travel lab. Use weather tools for conditions, "
-        "search_flights for routes, and list_destinations when a city is unclear. "
-        "All results are fictional and must not be used for real bookings."
-    ),
+    instructions="Offline fictional India travel data.",
 )
 
 # --------------------------------------------------------------------------
@@ -77,15 +73,15 @@ class Weather(BaseModel):
     """Current weather for a city."""
 
     city: str
-    temperature_c: int = Field(description="Temperature in degrees Celsius.")
-    condition: str = Field(description="Short human-readable sky condition.")
+    temperature_c: int
+    condition: str
     humidity_pct: int = Field(ge=0, le=100)
 
 
 class ForecastDay(BaseModel):
     """Weather for a single future day."""
 
-    day: str = Field(description="ISO date in YYYY-MM-DD format.")
+    day: str
     high_c: int
     low_c: int
     condition: str
@@ -97,9 +93,9 @@ class Flight(BaseModel):
     flight_number: str
     origin: str
     destination: str
-    departs: str = Field(description="Local departure time, 24h HH:MM.")
+    departs: str
     duration_hours: float
-    price_inr: int = Field(description="Fictional fare in Indian rupees.")
+    price_inr: int
 
 
 # --------------------------------------------------------------------------
@@ -109,15 +105,15 @@ class Flight(BaseModel):
 
 @mcp.tool
 def list_destinations() -> list[str]:
-    """List every city this travel service knows about."""
+    """List supported cities."""
     return sorted(DESTINATIONS)
 
 
 @mcp.tool
 def get_weather(
-    city: Annotated[str, Field(description='Indian city name, e.g. "Pune".')],
+    city: Annotated[str, Field(description="Supported city name.")],
 ) -> Weather:
-    """Get today's weather for a city. Only supported destinations work."""
+    """Get today's weather."""
     key = _known_city(city)
     seed = _seed("weather", key, date.today().isoformat())
     return Weather(
@@ -130,13 +126,13 @@ def get_weather(
 
 @mcp.tool
 def get_forecast(
-    city: Annotated[str, Field(description='Indian city name, e.g. "Kochi".')],
+    city: Annotated[str, Field(description="Supported city name.")],
     days: Annotated[int, Field(ge=1, le=7, description="Days ahead to forecast.")] = 3,
     units: Annotated[
         Literal["celsius", "fahrenheit"], Field(description="Temperature units.")
     ] = "celsius",
 ) -> list[ForecastDay]:
-    """Get a multi-day weather forecast for a city."""
+    """Get a weather forecast."""
     key = _known_city(city)
     if not 1 <= days <= 7:
         raise ValueError("days must be between 1 and 7")
@@ -163,13 +159,13 @@ def get_forecast(
 
 @mcp.tool
 def search_flights(
-    origin: Annotated[str, Field(description='Indian departure city, e.g. "Delhi".')],
-    destination: Annotated[str, Field(description='Indian arrival city, e.g. "Kochi".')],
+    origin: Annotated[str, Field(description="Supported departure city.")],
+    destination: Annotated[str, Field(description="Supported arrival city.")],
     max_results: Annotated[
         int, Field(ge=1, le=5, description="Maximum number of flights to return.")
-    ] = 3,
+    ] = 1,
 ) -> list[Flight]:
-    """Search for flights between two cities."""
+    """Search fictional flights."""
     origin_key = _known_city(origin)
     dest_key = _known_city(destination)
     if origin_key == dest_key:

@@ -16,7 +16,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src" / "solution"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from agent_raw import MAX_TURNS, run  # noqa: E402
+from agent_raw import (  # noqa: E402
+    FINAL_ANSWER_TOOL,
+    MAX_TURNS,
+    compact_schema,
+    mcp_tools_to_openai,
+    run,
+    tools_for_question,
+)
 from model_config import (  # noqa: E402
     DEFAULT_MODEL,
     ConfigError,
@@ -67,9 +74,63 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    def test_compacts_model_schema_without_mutating_mcp_schema(self) -> None:
+        schema = {
+            "title": "WeatherArgs",
+            "type": "object",
+            "properties": {
+                "city": {"title": "City", "type": "string"},
+            },
+            "required": ["city"],
+            "additionalProperties": False,
+        }
+        tool = SimpleNamespace(
+            name="get_weather", description="Get weather.", input_schema=schema
+        )
+
+        converted = mcp_tools_to_openai([tool])
+
+        self.assertEqual(
+            converted[0]["function"]["parameters"],
+            {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"],
+            },
+        )
+        self.assertIn("title", schema)
+        self.assertFalse(schema["additionalProperties"])
+
+    def test_routes_weather_question_without_flight_or_forecast_schemas(self) -> None:
+        names = [
+            "list_destinations",
+            "get_weather",
+            "get_forecast",
+            "search_flights",
+        ]
+        tools = [
+            {"type": "function", "function": {"name": name}} for name in names
+        ] + [FINAL_ANSWER_TOOL]
+
+        selected = tools_for_question("What is the weather in Pune?", tools)
+
+        selected_names = {tool["function"]["name"] for tool in selected}
+        self.assertEqual(
+            selected_names, {"list_destinations", "get_weather", "final_answer"}
+        )
+
+    def test_ambiguous_question_keeps_all_tools(self) -> None:
+        tools = [
+            {"type": "function", "function": {"name": "get_weather"}},
+            {"type": "function", "function": {"name": "search_flights"}},
+            FINAL_ANSWER_TOOL,
+        ]
+
+        self.assertEqual(tools_for_question("Help me decide.", tools), tools)
+
     def test_selects_cpu_variant_even_when_gpu_variant_is_first(self) -> None:
         cpu = SimpleNamespace(
-            id="qwen3-vl-2b-instruct-generic-cpu:1",
+            id="qwen3.5-0.8b-generic-cpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="CPU", execution_provider="CPUExecutionProvider"
@@ -77,7 +138,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ),
         )
         gpu = SimpleNamespace(
-            id="qwen3-vl-2b-instruct-generic-gpu:1",
+            id="qwen3.5-0.8b-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -96,7 +157,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
     def test_rejects_model_without_cpu_variant_and_lists_catalog_variants(self) -> None:
         gpu = SimpleNamespace(
-            id="qwen3-vl-2b-instruct-generic-gpu:1",
+            id="qwen3.5-0.8b-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -111,7 +172,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaisesRegex(
             ConfigError,
-            r"no CPU variant.*qwen3-vl-2b-instruct-generic-gpu:1.*WebGpuExecutionProvider",
+            r"no CPU variant.*qwen3\.5-0\.8b-generic-gpu:1.*WebGpuExecutionProvider",
         ):
             select_cpu_variant(model)
 
@@ -148,7 +209,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
                 model = manager.instance.catalog.get_model.return_value
                 cpu = SimpleNamespace(
-                    id="qwen3-vl-2b-instruct-generic-cpu:1",
+                    id="qwen3.5-0.8b-generic-cpu:1",
                     info=SimpleNamespace(
                         runtime=SimpleNamespace(
                             device_type="CPU",
