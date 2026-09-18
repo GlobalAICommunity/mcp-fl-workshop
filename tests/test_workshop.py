@@ -35,6 +35,63 @@ from model_config import (  # noqa: E402
 )
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
+from scripts import diagnose_completion  # noqa: E402
+
+
+class CompletionDiagnosticTests(unittest.TestCase):
+    def test_request_shapes(self):
+        from foundry_local_sdk.openai.chat_client import ChatClientSettings
+
+        for mode, text_format in (
+            ("baseline", False), ("plain", False), ("required", False),
+            ("baseline", True), ("plain", True),
+        ):
+            argv = ["diagnose_completion.py", "--mode", mode]
+            if text_format:
+                argv.append("--text-format")
+            with self.subTest(mode=mode, text_format=text_format), patch.object(
+                diagnose_completion, "get_local_model"
+            ) as get_model, patch.object(
+                diagnose_completion, "describe", return_value="test model"
+            ), patch.object(
+                sys, "argv", argv
+            ), patch("builtins.print"):
+                client = get_model.return_value.client
+                client.settings = ChatClientSettings(max_tokens=64)
+                self.assertEqual(diagnose_completion.main(), 0)
+                settings = client.settings._serialize()
+                if text_format:
+                    self.assertEqual(settings["response_format"], {"type": "text"})
+                else:
+                    self.assertNotIn("response_format", settings)
+                client.complete_chat.assert_called_once()
+                self.assertEqual(
+                    client.settings.tool_choice,
+                    {"type": "required" if mode == "required" else "none"},
+                )
+                if mode == "baseline":
+                    client.complete_chat.assert_called_once_with([
+                        {"role": "user", "content": "Reply with the word hello."}
+                    ])
+                else:
+                    messages, tools = client.complete_chat.call_args.args
+                    self.assertEqual(
+                        [message["role"] for message in messages],
+                        ["system", "user", "assistant", "tool"],
+                    )
+                    self.assertEqual(tools, [FINAL_ANSWER_TOOL])
+
+    def test_text_format_rejects_required_mode(self):
+        with patch.object(
+            sys, "argv",
+            ["diagnose_completion.py", "--mode", "required", "--text-format"],
+        ), patch.object(diagnose_completion, "get_local_model") as get_model, patch(
+            "sys.stderr"
+        ):
+            with self.assertRaises(SystemExit) as raised:
+                diagnose_completion.main()
+            self.assertEqual(raised.exception.code, 2)
+            get_model.assert_not_called()
 
 
 class RepeatingChatClient:

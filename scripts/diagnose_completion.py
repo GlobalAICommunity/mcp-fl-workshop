@@ -1,4 +1,4 @@
-"""Compare native response modes using synthetic tool history, without MCP."""
+"""Compare tools-free chat and synthetic tool-history completions, without MCP."""
 
 from __future__ import annotations
 
@@ -18,8 +18,17 @@ from model_config import ConfigError, describe, get_local_model
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("required", "plain"), required=True)
+    parser.add_argument(
+        "--mode", choices=("baseline", "required", "plain"), required=True,
+        help="baseline: no tools/history; plain/required: synthetic tool history",
+    )
+    parser.add_argument(
+        "--text-format", action="store_true",
+        help="Explicitly request text response format (baseline/plain only)",
+    )
     args = parser.parse_args()
+    if args.text_format and args.mode == "required":
+        parser.error("--text-format is only supported with baseline or plain mode")
     instruction = (
         "Call final_answer alone with one short sentence."
         if args.mode == "required"
@@ -55,21 +64,29 @@ def main() -> int:
             }),
         },
     ]
+    if args.mode == "baseline":
+        messages = [{"role": "user", "content": "Reply with the word hello."}]
     try:
         model = get_local_model()
         client = model.client
         client.settings.tool_choice = {
             "type": "required" if args.mode == "required" else "none"
         }
+        client.settings.response_format = {"type": "text"} if args.text_format else None
         print(f"[{describe(model)}]", flush=True)
+        scenario = "No tools or history" if args.mode == "baseline" else "Synthetic tool history"
         print(
-            f"Synthetic history; mode={args.mode}; "
+            f"{scenario}; mode={args.mode}; "
+            f"response_format={'text' if args.text_format else 'runtime default'}; "
             f"max_tokens={client.settings.max_tokens}; no MCP tools executed.",
             flush=True,
         )
         started = time.monotonic()
         try:
-            response = client.complete_chat(messages, [FINAL_ANSWER_TOOL])
+            if args.mode == "baseline":
+                response = client.complete_chat(messages)
+            else:
+                response = client.complete_chat(messages, [FINAL_ANSWER_TOOL])
         finally:
             print(f"Native completion elapsed: {time.monotonic() - started:.1f}s", flush=True)
         print(response.model_dump_json(indent=2))
