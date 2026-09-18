@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3.5-9b"
+DEFAULT_MODEL = "qwen3-vl-2b-instruct"
 
 
 class ConfigError(RuntimeError):
@@ -76,13 +76,13 @@ def complete_smoke_test(client, messages: list[dict], tools: list[dict]):
     raise AssertionError("unreachable")
 
 
-def select_gpu_variant(model) -> None:
-    """Select the highest-priority GPU variant or report what the catalog offers."""
+def select_cpu_variant(model) -> None:
+    """Select the highest-priority CPU variant or report what the catalog offers."""
     variants = list(model.variants)
     for variant in variants:
         runtime = variant.info.runtime
         device_type = getattr(runtime, "device_type", None)
-        if getattr(device_type, "value", device_type) == "GPU":
+        if getattr(device_type, "value", device_type) == "CPU":
             model.select_variant(variant)
             return
 
@@ -96,9 +96,9 @@ def select_gpu_variant(model) -> None:
         )
     details = ", ".join(offered) or "none"
     raise ConfigError(
-        f"Foundry Local has no GPU variant for {model.alias!r}. "
-        f"Available variants: {details}. Check that the VM GPU and its execution "
-        "provider support this model before building the workshop image."
+        f"Foundry Local has no CPU variant for {model.alias!r}. "
+        f"Available variants: {details}. Choose a model with a CPU variant before "
+        "building the workshop image."
     )
 
 
@@ -126,7 +126,7 @@ def get_local_model() -> LocalModel:
             "The facilitator must rebuild the VM with scripts/prepare_vm.py."
         )
     if alias == DEFAULT_MODEL:
-        select_gpu_variant(model)
+        select_cpu_variant(model)
     if not model.supports_tool_calling:
         raise ConfigError(f"Foundry Local model {alias!r} does not support tool calling.")
     if not model.is_cached:

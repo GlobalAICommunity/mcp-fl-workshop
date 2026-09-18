@@ -22,7 +22,7 @@ from model_config import (  # noqa: E402
     ConfigError,
     complete_smoke_test,
     get_local_model,
-    select_gpu_variant,
+    select_cpu_variant,
 )
 from approval_demo import mcp as approval_server  # noqa: E402
 from travel_server import mcp as travel_server  # noqa: E402
@@ -67,9 +67,9 @@ class FlightChatClient:
 
 
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
-    def test_selects_gpu_variant_even_when_cpu_variant_is_cached(self) -> None:
+    def test_selects_cpu_variant_even_when_gpu_variant_is_first(self) -> None:
         cpu = SimpleNamespace(
-            id="qwen3.5-9b-generic-cpu:3",
+            id="qwen3-vl-2b-instruct-generic-cpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="CPU", execution_provider="CPUExecutionProvider"
@@ -77,7 +77,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ),
         )
         gpu = SimpleNamespace(
-            id="qwen3.5-9b-webgpu:3",
+            id="qwen3-vl-2b-instruct-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -90,30 +90,30 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             select_variant=unittest.mock.Mock(),
         )
 
-        select_gpu_variant(model)
+        select_cpu_variant(model)
 
-        model.select_variant.assert_called_once_with(gpu)
+        model.select_variant.assert_called_once_with(cpu)
 
-    def test_rejects_cpu_fallback_and_lists_catalog_variants(self) -> None:
-        cpu = SimpleNamespace(
-            id="qwen3.5-9b-generic-cpu:3",
+    def test_rejects_model_without_cpu_variant_and_lists_catalog_variants(self) -> None:
+        gpu = SimpleNamespace(
+            id="qwen3-vl-2b-instruct-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
-                    device_type="CPU", execution_provider="CPUExecutionProvider"
+                    device_type="GPU", execution_provider="WebGpuExecutionProvider"
                 )
             ),
         )
         model = SimpleNamespace(
             alias=DEFAULT_MODEL,
-            variants=[cpu],
+            variants=[gpu],
             select_variant=unittest.mock.Mock(),
         )
 
         with self.assertRaisesRegex(
             ConfigError,
-            r"no GPU variant.*qwen3\.5-9b-generic-cpu:3.*CPUExecutionProvider",
+            r"no CPU variant.*qwen3-vl-2b-instruct-generic-gpu:1.*WebGpuExecutionProvider",
         ):
-            select_gpu_variant(model)
+            select_cpu_variant(model)
 
         model.select_variant.assert_not_called()
 
@@ -147,20 +147,20 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
                 os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
             ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
                 model = manager.instance.catalog.get_model.return_value
-                gpu = SimpleNamespace(
-                    id="qwen3.5-9b-webgpu:3",
+                cpu = SimpleNamespace(
+                    id="qwen3-vl-2b-instruct-generic-cpu:1",
                     info=SimpleNamespace(
                         runtime=SimpleNamespace(
-                            device_type="GPU",
-                            execution_provider="WebGpuExecutionProvider",
+                            device_type="CPU",
+                            execution_provider="CPUExecutionProvider",
                         )
                     ),
                 )
-                model.variants = [gpu]
+                model.variants = [cpu]
                 local_model = get_local_model()
                 self.assertEqual(local_model.client.settings.max_tokens, expected)
                 manager.instance.catalog.get_model.assert_called_once_with(DEFAULT_MODEL)
-                model.select_variant.assert_called_once_with(gpu)
+                model.select_variant.assert_called_once_with(cpu)
                 model.load.assert_not_called()
 
     def test_model_output_budget_rejects_invalid_values(self) -> None:

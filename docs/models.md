@@ -1,7 +1,7 @@
 # Foundry Local model
 
 The workshop has one supported runtime path: Foundry Local with cached alias
-`qwen3.5-9b`. The GPU-enabled VM has capacity for this larger tool-calling model.
+`qwen3-vl-2b-instruct`. This compact tool-calling model runs on the workshop CPU.
 
 The direct Python dependency is pinned in `requirements-server.txt`:
 
@@ -15,7 +15,7 @@ the accepted Windows VM image.
 ## How the model is used
 
 `src/model_config.py` initializes `FoundryLocalManager` once, resolves the alias
-through the catalog, lets the SDK select the best hardware variant, checks
+through the catalog, explicitly selects its CPU variant, checks
 `supports_tool_calling` and `is_cached`, loads the model if needed, and returns
 its native chat client.
 
@@ -31,9 +31,9 @@ boundary.
 
 ## Alias versus model ID
 
-`qwen3.5-9b` is an alias. Foundry Local maps it to concrete model variants. The
-workshop explicitly selects the highest-priority GPU variant so a cached CPU
-variant cannot silently take precedence.
+`qwen3-vl-2b-instruct` is an alias. Foundry Local maps it to concrete model
+variants. The workshop explicitly selects the highest-priority CPU variant so
+catalog ordering cannot select an unsupported GPU provider.
 
 The selected concrete ID is printed by the preparation script and by
 `model_config.describe()`.
@@ -42,7 +42,7 @@ The selected concrete ID is printed by the preparation script and by
 
 ### Image builder, online
 
-The image builder downloads the GPU variant exposed by the SDK catalog:
+The image builder downloads the CPU variant exposed by the SDK catalog:
 
 ```powershell
 .\workshop.ps1 prepare-vm
@@ -59,8 +59,8 @@ The attendee only verifies and loads existing assets:
 ```
 
 `get_local_model()` fails with a clear message if the alias is unknown, has no
-GPU variant, lacks tool support, or is not cached. It never silently downloads
-a missing model or falls back to CPU.
+CPU variant, lacks tool support, or is not cached. It never silently downloads
+a missing model or switches to an unsupported accelerator.
 
 ## Readiness criteria
 
@@ -69,7 +69,7 @@ hardware:
 
 1. the catalog resolves the alias
 2. the model reports tool-calling support
-3. the hardware-selected variant is cached under the attendee account
+3. the CPU variant is cached under the attendee account
 4. the model loads with networking disabled
 5. a forced `get_weather` request produces a structured tool call
 6. the complete agent answers a multi-tool India travel question
@@ -98,6 +98,6 @@ arrive, but still test a cold restored VM before distributing the image. Exact
 generation speed depends on the VM CPU, memory, execution provider, and host
 contention, so measure on the same class of hardware used in the room.
 
-Record cold-load latency, generation speed, GPU memory use, and the complete
+Record cold-load latency, generation speed, system memory use, and the complete
 multi-tool acceptance result for the final VM image. These measurements are
-specific to the event GPU and virtualization configuration.
+specific to the event CPU and virtualization configuration.

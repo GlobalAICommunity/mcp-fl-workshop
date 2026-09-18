@@ -9,12 +9,12 @@ The tested stack is:
 - FastMCP `4.0.0`
 - MCP protocol revision `2026-07-28`
 - Foundry Local Python SDK `foundry-local-sdk-winml==1.2.4`
-- Foundry Local model alias `qwen3.5-9b`
+- Foundry Local model alias `qwen3-vl-2b-instruct`
 - Python 3.11 or newer on Windows
 
 No cloud account, API key, package install, model download, or event Wi-Fi is
 required. The facilitator prepares `.venv`, the Foundry Local runtime, and the
-GPU model cache before distributing the VM image.
+CPU model cache before distributing the VM image.
 
 ## Start here
 
@@ -63,7 +63,7 @@ reproduce and prevents accidental real-world booking decisions.
 flowchart LR
     U[Attendee] --> B[Local browser]
     B --> A[Handwritten agent loop]
-    A <--> F[Foundry Local qwen3.5-9b]
+    A <--> F[Foundry Local qwen3-vl-2b-instruct]
     A <-->|FastMCP over stdio| S[Bharat Travel Desk]
     S --> D[Deterministic India travel data]
 ```

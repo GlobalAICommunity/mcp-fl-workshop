@@ -23,7 +23,7 @@ from model_config import (  # noqa: E402
     ConfigError,
     complete_smoke_test,
     get_foundry_configuration,
-    select_gpu_variant,
+    select_cpu_variant,
 )
 
 
@@ -44,29 +44,13 @@ def main() -> int:
     FoundryLocalManager.initialize(get_foundry_configuration())
     manager = FoundryLocalManager.instance
 
-    execution_providers = manager.discover_eps()
-    missing_providers = [ep.name for ep in execution_providers if not ep.is_registered]
-    if missing_providers:
-        print(f"Registering execution providers: {', '.join(missing_providers)}")
-        result = manager.download_and_register_eps(
-            missing_providers,
-            lambda name, percent: print(
-                f"\rRegistering {name}: {percent:5.1f}%", end="", flush=True
-            ),
-        )
-        print()
-        if not result.success or result.failed_eps:
-            failed = ", ".join(result.failed_eps) or result.status
-            print(f"Execution provider registration failed: {failed}", file=sys.stderr)
-            return 1
-
     model = manager.catalog.get_model(args.model)
     if model is None:
         print(f"Unknown Foundry Local model alias: {args.model}", file=sys.stderr)
         return 1
     if args.model == DEFAULT_MODEL:
         try:
-            select_gpu_variant(model)
+            select_cpu_variant(model)
         except ConfigError as exc:
             print(exc, file=sys.stderr)
             return 1
@@ -118,7 +102,7 @@ def main() -> int:
             file=sys.stderr,
         )
         print(
-            "Check available GPU memory and rerun with "
+            "Check available system memory and CPU load, then rerun with "
             "$env:MCP_WORKSHOP_LOG_DIR='.\\foundry-local-logs' for native logs.",
             file=sys.stderr,
         )
