@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -27,6 +28,7 @@ from agent_raw import (  # noqa: E402
 from model_config import (  # noqa: E402
     DEFAULT_MODEL,
     ConfigError,
+    complete_agent_smoke_test,
     complete_smoke_test,
     get_local_model,
     select_cpu_variant,
@@ -73,7 +75,107 @@ class FlightChatClient:
         return SimpleNamespace(choices=[SimpleNamespace(message=message)])
 
 
+class WeatherChatClient:
+    def __init__(self) -> None:
+        self.settings = SimpleNamespace(tool_choice=None)
+        self.tool_names_by_turn: list[list[str]] = []
+
+    def complete_chat(self, messages, tools):
+        self.tool_names_by_turn.append(
+            [tool["function"]["name"] for tool in tools]
+        )
+        if len(self.tool_names_by_turn) == 1:
+            name = "get_weather"
+            arguments = '{"city":"Pune"}'
+        else:
+            name = "final_answer"
+            arguments = '{"answer":"Pune is clear and 27 C."}'
+        call = SimpleNamespace(
+            id=f"call-{len(self.tool_names_by_turn)}",
+            function=SimpleNamespace(name=name, arguments=arguments),
+        )
+        message = SimpleNamespace(content="", tool_calls=[call])
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+
 class WorkshopTests(unittest.IsolatedAsyncioTestCase):
+    def test_agent_smoke_test_completes_post_tool_turn(self) -> None:
+        first_call = SimpleNamespace(
+            id="weather-1",
+            function=SimpleNamespace(
+                name="get_weather", arguments='{"city":"Pune"}'
+            ),
+        )
+        final_call = SimpleNamespace(
+            id="final-1",
+            function=SimpleNamespace(
+                name="final_answer", arguments='{"answer":"Pune is clear."}'
+            ),
+        )
+        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
+        client.complete_chat.side_effect = [
+            SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(tool_calls=[first_call])
+                    )
+                ]
+            ),
+            SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(tool_calls=[final_call])
+                    )
+                ]
+            ),
+        ]
+
+        answer = complete_agent_smoke_test(client)
+
+        self.assertEqual(answer, "Pune is clear.")
+        self.assertEqual(client.complete_chat.call_count, 2)
+        second_messages, second_tools = client.complete_chat.call_args.args
+        self.assertEqual(second_messages[-1]["role"], "tool")
+        self.assertEqual(second_messages[-1]["tool_call_id"], "weather-1")
+        self.assertEqual(second_tools[0]["function"]["name"], "final_answer")
+
+    async def test_successful_weather_call_leaves_only_final_answer(self) -> None:
+        chat_client = WeatherChatClient()
+
+        answer = await run(
+            "What is the weather in Pune?",
+            chat_client=chat_client,
+            mcp_server=travel_server,
+        )
+
+        self.assertEqual(answer, "Pune is clear and 27 C.")
+        self.assertEqual(
+            set(chat_client.tool_names_by_turn[0]),
+            {"list_destinations", "get_weather", "final_answer"},
+        )
+        self.assertEqual(chat_client.tool_names_by_turn[1], ["final_answer"])
+
+    def test_raw_helper_returns_verbose_tool_error(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "raw_jsonrpc.py"),
+                "tools/call",
+                '{"name":"get_weather","arguments":{"city":"Atlantis"}}',
+                "--server",
+                str(REPO_ROOT / "src" / "solution" / "travel_server.py"),
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn('"isError": true', completed.stdout)
+        self.assertNotIn("Timed out", completed.stderr)
+
     def test_compacts_model_schema_without_mutating_mcp_schema(self) -> None:
         schema = {
             "title": "WeatherArgs",
@@ -203,7 +305,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         client.complete_chat.assert_called_once()
 
     def test_model_output_budget(self) -> None:
-        for value, expected in (("", 256), ("128", 128), (" 64 ", 64)):
+        for value, expected in (("", 64), ("128", 128), (" 64 ", 64)):
             with self.subTest(value=value), patch.dict(
                 os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
             ), patch("foundry_local_sdk.FoundryLocalManager") as manager:

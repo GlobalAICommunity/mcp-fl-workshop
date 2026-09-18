@@ -7,6 +7,7 @@ credentials, or a fixed localhost port.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from dataclasses import dataclass
@@ -76,6 +77,75 @@ def complete_smoke_test(client, messages: list[dict], tools: list[dict]):
     raise AssertionError("unreachable")
 
 
+def complete_agent_smoke_test(client) -> str:
+    """Prove the model can call a tool and finish after receiving its result."""
+    weather_tool = {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get weather for a supported city.",
+            "parameters": {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"],
+            },
+        },
+    }
+    final_tool = {
+        "type": "function",
+        "function": {
+            "name": "final_answer",
+            "description": "Finish with a short answer based on the tool result.",
+            "parameters": {
+                "type": "object",
+                "properties": {"answer": {"type": "string"}},
+                "required": ["answer"],
+            },
+        },
+    }
+    messages = [{"role": "user", "content": "Use get_weather for Pune."}]
+    first = complete_smoke_test(client, messages, [weather_tool])
+    calls = first.choices[0].message.tool_calls or []
+    if not calls or calls[0].function.name != "get_weather":
+        raise ConfigError("Model did not emit the required get_weather call.")
+
+    call = calls[0]
+    messages.extend(
+        [
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": call.id,
+                        "type": "function",
+                        "function": {
+                            "name": call.function.name,
+                            "arguments": call.function.arguments,
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": call.id,
+                "content": '{"city":"Pune","temperature_c":27,"condition":"clear"}',
+            },
+        ]
+    )
+    second = complete_smoke_test(client, messages, [final_tool])
+    final_calls = second.choices[0].message.tool_calls or []
+    if not final_calls or final_calls[0].function.name != "final_answer":
+        raise ConfigError("Model did not emit final_answer after the tool result.")
+    try:
+        answer = json.loads(final_calls[0].function.arguments or "{}").get("answer")
+    except json.JSONDecodeError as exc:
+        raise ConfigError("Model emitted invalid JSON for final_answer.") from exc
+    if not isinstance(answer, str) or not answer.strip():
+        raise ConfigError("Model emitted an empty final_answer.")
+    return answer.strip()
+
+
 def select_cpu_variant(model) -> None:
     """Select the highest-priority CPU variant or report what the catalog offers."""
     variants = list(model.variants)
@@ -106,7 +176,7 @@ def get_local_model() -> LocalModel:
     """Load the pre-cached Foundry Local model and return its chat client."""
     from foundry_local_sdk import FoundryLocalManager
 
-    token_setting = os.getenv("MCP_WORKSHOP_MAX_TOKENS", "").strip() or "256"
+    token_setting = os.getenv("MCP_WORKSHOP_MAX_TOKENS", "").strip() or "64"
     try:
         max_tokens = int(token_setting)
     except ValueError as exc:

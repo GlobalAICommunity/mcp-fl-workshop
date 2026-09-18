@@ -56,7 +56,7 @@ the check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in **.venv**.
 - The FastMCP server and protocol negotiation.
 - The browser application import.
-- A cached **qwen3.5-0.8b** model that can emit a tool call.
+- A cached **qwen3.5-0.8b** model that can call a tool and finish after its result.
 
 A ready image ends with output similar to:
 
@@ -65,7 +65,7 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
-[  ok  ] Foundry Local model - qwen3.5-0.8b loaded from cache and emitted get_weather
+[  ok  ] Foundry Local model - qwen3.5-0.8b completed get_weather -> final_answer
 
 All good - you are ready for the offline workshop.
 ```
@@ -580,7 +580,9 @@ a host-side optimization applied only to the copy sent to the model.
 Before the turn loop, **tools_for_question()** uses small keyword groups to keep
 likely tools plus **final_answer**. For example, a weather question does not pay
 the token cost of the flight schema. If no hint matches, it keeps every tool so
-unusual wording remains recoverable.
+unusual wording remains recoverable. After a successful travel call, the host
+removes that completed schema and the recovery-only **list_destinations** schema.
+A simple weather request therefore sends only **final_answer** on turn 2.
 
 ### The Complete Loop
 

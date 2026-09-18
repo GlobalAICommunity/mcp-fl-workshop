@@ -226,12 +226,13 @@ The preparation script:
 3. explicitly selects the highest-priority CPU variant
 4. verifies tool-calling support
 5. downloads that concrete model if absent
-6. loads it and forces a `get_weather` tool request
+6. loads it, forces a `get_weather` request, and completes `final_answer` after
+	the tool result
 
 Do not interrupt a download. The command must end with:
 
 ```text
-Tool-calling smoke test passed: get_weather
+Two-turn agent smoke test passed: get_weather -> final_answer
 VM model preparation complete. Run scripts/verify_setup.py with networking off.
 ```
 
@@ -316,15 +317,16 @@ and test a smaller output budget in the same PowerShell session:
 
 ```powershell
 $env:MCP_WORKSHOP_LOG_DIR = "$env:TEMP\MCP-Workshop-Logs"
-$env:MCP_WORKSHOP_MAX_TOKENS = '128'
+$env:MCP_WORKSHOP_MAX_TOKENS = '64'
 .\workshop.ps1 agent "Find a flight from Bengaluru to Kochi and tell me what to pack."
 Get-ChildItem -LiteralPath $env:MCP_WORKSHOP_LOG_DIR -File -Recurse |
 	ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 80 }
 ```
 
-The default output limit is 256 tokens per completion. The override is a
-diagnostic experiment, not a timeout extension or a confirmed cancellation
-fix. A smaller budget can truncate tool arguments or omit requested content.
+The default output limit is 64 tokens per completion. On an older workshop
+checkout that still defaults to 256, set **MCP_WORKSHOP_MAX_TOKENS** to **64**
+before retrying. The override is not a timeout extension. A smaller budget can
+truncate tool arguments or omit requested content.
 Check both the flight facts and weather-grounded packing advice; an incomplete
 answer does not pass acceptance. Record elapsed time and CPU/memory usage on
 the failing VM. Debug logs may contain prompts and tool results; review them

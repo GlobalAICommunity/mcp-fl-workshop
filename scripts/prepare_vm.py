@@ -21,7 +21,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from model_config import (  # noqa: E402
     DEFAULT_MODEL,
     ConfigError,
-    complete_smoke_test,
+    complete_agent_smoke_test,
     get_foundry_configuration,
     select_cpu_variant,
 )
@@ -77,25 +77,10 @@ def main() -> int:
     client.settings.temperature = 0.0
     client.settings.max_tokens = 64
     client.settings.tool_choice = {"type": "required"}
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "Get weather for a supported city.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"city": {"type": "string"}},
-                    "required": ["city"],
-                },
-            },
-        }
-    ]
-    messages = [{"role": "user", "content": "Use get_weather for Pune."}]
     started = time.monotonic()
     try:
-        response = complete_smoke_test(client, messages, tools)
-    except FoundryLocalException as exc:
+        complete_agent_smoke_test(client)
+    except (ConfigError, FoundryLocalException) as exc:
         elapsed = time.monotonic() - started
         print(
             f"Tool-calling smoke test failed for {model.id} after {elapsed:.1f}s: {exc}",
@@ -107,12 +92,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    calls = response.choices[0].message.tool_calls or []
-    if not calls or calls[0].function.name != "get_weather":
-        print("Model loaded but did not produce the required tool call.", file=sys.stderr)
-        return 1
-
-    print(f"Tool-calling smoke test passed: {calls[0].function.name}")
+    print("Two-turn agent smoke test passed: get_weather -> final_answer")
     print("VM model preparation complete. Run scripts/verify_setup.py with networking off.")
     return 0
 

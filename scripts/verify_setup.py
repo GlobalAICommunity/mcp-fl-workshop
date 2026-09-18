@@ -169,37 +169,15 @@ def check_local_model() -> None:
 
     local_model.client.settings.max_tokens = 64
     local_model.client.settings.tool_choice = {"type": "required"}
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "Get weather for a supported city.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"city": {"type": "string"}},
-                    "required": ["city"],
-                },
-            },
-        }
-    ]
     try:
-        response = mc.complete_smoke_test(
-            local_model.client,
-            [{"role": "user", "content": "Use get_weather for Pune."}], tools
-        )
-        calls = response.choices[0].message.tool_calls or []
+        mc.complete_agent_smoke_test(local_model.client)
     except Exception as exc:  # noqa: BLE001
         report(BAD, "Foundry Local model", f"inference failed: {exc}")
         return
-    if not calls or calls[0].function.name != "get_weather":
-        report(BAD, "Foundry Local model", "model did not emit the required tool call")
-        return
-
     report(
         OK,
         "Foundry Local model",
-        f"{local_model.alias} loaded from cache and emitted get_weather",
+        f"{local_model.alias} completed get_weather -> final_answer",
     )
 
 

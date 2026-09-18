@@ -81,10 +81,9 @@ not fall back to a hosted endpoint during an offline event.
 
 ## Foundry Local reports Operation was cancelled
 
-The preparation and readiness smoke tests retry one first-inference cancellation
-because initial model startup can transiently cancel the first request. They do
-not retry normal agent turns, where replaying a tool request could repeat an
-action.
+The preparation and readiness smoke tests retry one cancellation for each
+idempotent model-only completion. They do not retry normal agent turns, where
+replaying a tool request could repeat an action.
 
 If the retry also fails, close memory-intensive workloads and rerun preparation
 while online with native logging enabled:
@@ -101,8 +100,9 @@ CPU load before sealing the image.
 
 ## The model is cached but emits no tool call
 
-The full preflight exposes only `get_weather` and sets `tool_choice` to
-`required`. Failure means the runtime is not ready even if ordinary chat works.
+The full preflight first exposes only `get_weather`, then sends its result with
+only `final_answer`; both calls use `tool_choice` set to `required`. Failure on
+either turn means the runtime is not ready even if ordinary chat works.
 
 Check that the image uses the pinned SDK, the configured alias supports tool
 calling, and the preparation smoke test passed. Rebuild or replace the image.

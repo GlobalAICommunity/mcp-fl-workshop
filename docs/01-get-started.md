@@ -32,7 +32,7 @@ The check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in `.venv`
 - the FastMCP server and protocol negotiation
 - the browser application import
-- a cached `qwen3.5-0.8b` model that can emit a tool call
+- a cached `qwen3.5-0.8b` model that can call a tool and finish after its result
 
 A ready image ends with output similar to:
 
@@ -41,13 +41,14 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
-[  ok  ] Foundry Local model - qwen3.5-0.8b loaded from cache and emitted get_weather
+[  ok  ] Foundry Local model - qwen3.5-0.8b completed get_weather -> final_answer
 
 All good - you are ready for the offline workshop.
 ```
 
-The first model load can take a little longer than later calls. A successful
-tool call matters more than simply finding model files on disk.
+The first model load can take a little longer than later calls. The check proves
+both model turns; finding model files or producing only the first call is not
+enough.
 
 ## 3. If PowerShell blocks the script
 

@@ -242,6 +242,15 @@ async def run(
                         )
                         if isinstance(flights, list) and flights:
                             first_flight = flights[0]
+                    if not result.is_error:
+                        completed = {name}
+                        if name != "list_destinations":
+                            completed.add("list_destinations")
+                        tools = [
+                            tool
+                            for tool in tools
+                            if tool["function"]["name"] not in completed
+                        ]
 
                 messages.append(
                     {"role": "tool", "tool_call_id": call.id, "content": output}

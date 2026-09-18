@@ -58,25 +58,30 @@ def main() -> int:
 
     process.stdin.write(encoded + "\n")
     process.stdin.flush()
-    with ThreadPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        stderr_pending = executor.submit(process.stderr.read)
         pending = executor.submit(process.stdout.readline)
         try:
             response = pending.result(timeout=30)
         except FutureTimeoutError:
             process.kill()
             pending.result(timeout=5)
+            server_error = stderr_pending.result(timeout=5)
             print("Timed out waiting for a JSON-RPC response.", file=sys.stderr)
+            if server_error:
+                print(server_error, file=sys.stderr, end="")
             return 1
 
-    process.stdin.close()
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.terminate()
-        process.wait(timeout=5)
+        process.stdin.close()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            process.wait(timeout=5)
+        server_error = stderr_pending.result(timeout=5)
 
     if not response.strip():
-        print(process.stderr.read() or "No JSON-RPC response received.", file=sys.stderr)
+        print(server_error or "No JSON-RPC response received.", file=sys.stderr)
         return 1
     try:
         parsed = json.loads(response)

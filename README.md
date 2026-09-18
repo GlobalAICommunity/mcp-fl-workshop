@@ -121,7 +121,8 @@ Reference material:
 Internet access is required only while building the image. Follow
 [docs/vm-image-runbook.md](docs/vm-image-runbook.md), then perform the final
 acceptance test with networking disabled. Do not treat package installation
-alone as readiness: the cached model must also produce a real tool call.
+alone as readiness: the cached model must call a tool and complete the
+post-tool turn.
 
 ## Licence
 

@@ -72,7 +72,8 @@ hardware:
 3. the CPU variant is cached under the attendee account
 4. the model loads with networking disabled
 5. a forced `get_weather` request produces a structured tool call
-6. the complete agent answers a multi-tool India travel question
+6. a second completion consumes the tool result and calls `final_answer`
+7. the complete agent answers a multi-tool India travel question
 
 A successful import or cache listing alone is insufficient.
 
