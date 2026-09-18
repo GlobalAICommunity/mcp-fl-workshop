@@ -41,7 +41,7 @@ Get-ChildItem
 
 all workshop commands assume this location.
 
-### 3. If PowerShell Blocks the Script
+### 2. If PowerShell Blocks the Script
 
 Allow local scripts to be executed. 
 
@@ -49,7 +49,7 @@ Allow local scripts to be executed.
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\workshop.ps1 check
 ```
-### 2. Run the Offline Check
+### 3. Run the Offline Check
 
 ```powershell
 .\workshop.ps1 check
