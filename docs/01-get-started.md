@@ -32,7 +32,7 @@ The check does not download anything. It verifies:
 - FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in `.venv`
 - the FastMCP server and protocol negotiation
 - the browser application import
-- a cached CPU variant of `qwen3.5-9b` that can call a tool and finish after its result
+- a cached CPU variant of `qwen3.5-4b` that can call a tool and finish after its result
 
 A ready image ends with output similar to:
 
@@ -41,7 +41,7 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
-[  ok  ] Foundry Local model - qwen3.5-9b completed get_weather -> final_answer
+[  ok  ] Foundry Local model - qwen3.5-4b completed get_weather -> final_answer
 
 All good - you are ready for the offline workshop.
 ```

@@ -122,7 +122,7 @@ repeat up to MAX_TURNS:
 
 Set `tool_choice` to `{"type": "required"}` and include a host-only
 `final_answer(answer)` function alongside the MCP tools. Foundry Local SDK 1.2.4
-then returns parsed calls for `qwen3.5-9b`; the host handles `final_answer`
+then returns parsed calls for `qwen3.5-4b`; the host handles `final_answer`
 without forwarding it to MCP. For flight questions, the host checks that the
 answer contains a returned flight number, departure, duration, INR price, and
 the fictional-fare disclosure. If any are absent, it inserts a deterministic
@@ -138,7 +138,7 @@ client = local_model.client
 response = client.complete_chat(messages, tools)
 ```
 
-The event image uses the cached CPU variant of `qwen3.5-9b`. Attendee code must not call a
+The event image uses the cached CPU variant of `qwen3.5-4b`. Attendee code must not call a
 download API. The native chat call is synchronous; async hosts can use
 `await asyncio.to_thread(client.complete_chat, messages, tools)`.
 

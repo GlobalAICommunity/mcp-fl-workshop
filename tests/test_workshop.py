@@ -31,6 +31,7 @@ from model_config import (  # noqa: E402
     complete_agent_smoke_test,
     complete_smoke_test,
     get_local_model,
+    get_max_tokens,
     select_cpu_variant,
 )
 from approval_demo import mcp as approval_server  # noqa: E402
@@ -343,7 +344,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
     def test_selects_cpu_variant_even_when_gpu_variant_is_first(self) -> None:
         cpu = SimpleNamespace(
-            id="qwen3.5-9b-generic-cpu:1",
+            id="qwen3.5-4b-generic-cpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="CPU", execution_provider="CPUExecutionProvider"
@@ -351,7 +352,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ),
         )
         gpu = SimpleNamespace(
-            id="qwen3.5-9b-generic-gpu:1",
+            id="qwen3.5-4b-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -370,7 +371,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
     def test_rejects_model_without_cpu_variant_and_lists_catalog_variants(self) -> None:
         gpu = SimpleNamespace(
-            id="qwen3.5-9b-generic-gpu:1",
+            id="qwen3.5-4b-generic-gpu:1",
             info=SimpleNamespace(
                 runtime=SimpleNamespace(
                     device_type="GPU", execution_provider="WebGpuExecutionProvider"
@@ -385,7 +386,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaisesRegex(
             ConfigError,
-            r"no CPU variant.*qwen3\.5-9b-generic-gpu:1.*WebGpuExecutionProvider",
+            r"no CPU variant.*qwen3\.5-4b-generic-gpu:1.*WebGpuExecutionProvider",
         ):
             select_cpu_variant(model)
 
@@ -424,7 +425,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
                 model = manager.instance.catalog.get_model.return_value
                 cpu = SimpleNamespace(
-                    id="qwen3.5-9b-generic-cpu:1",
+                    id="qwen3.5-4b-generic-cpu:1",
                     info=SimpleNamespace(
                         runtime=SimpleNamespace(
                             device_type="CPU",
@@ -466,11 +467,9 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         for value in ("0", "-1", "1.5", "invalid"):
             with self.subTest(value=value), patch.dict(
                 os.environ, {"MCP_WORKSHOP_MAX_TOKENS": value}
-            ), patch("foundry_local_sdk.FoundryLocalManager") as manager:
+            ):
                 with self.assertRaisesRegex(ConfigError, "positive integer"):
-                    get_local_model()
-                manager.initialize.assert_not_called()
-                manager.instance.catalog.get_model.assert_not_called()
+                    get_max_tokens()
 
     def test_native_debug_logging_is_opt_in(self) -> None:
         with TemporaryDirectory() as directory:

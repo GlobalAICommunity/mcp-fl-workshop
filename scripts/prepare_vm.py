@@ -23,6 +23,7 @@ from model_config import (  # noqa: E402
     ConfigError,
     complete_agent_smoke_test,
     get_foundry_configuration,
+    get_max_tokens,
     select_cpu_variant,
 )
 
@@ -74,7 +75,7 @@ def main() -> int:
 
     client = model.get_chat_client()
     client.settings.temperature = 0.0
-    client.settings.max_tokens = 64
+    client.settings.max_tokens = get_max_tokens()
     client.settings.tool_choice = {"type": "required"}
     started = time.monotonic()
     try:

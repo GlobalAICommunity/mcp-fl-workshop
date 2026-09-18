@@ -1,7 +1,7 @@
 # Foundry Local model
 
 The workshop has one supported runtime path: Foundry Local with cached alias
-`qwen3.5-9b`. Its tool-calling CPU variant runs on the workshop CPU.
+`qwen3.5-4b`. Its tool-calling CPU variant runs on the workshop CPU.
 
 The direct Python dependency is pinned in `requirements-server.txt`:
 
@@ -31,8 +31,8 @@ boundary.
 
 ## Alias versus model ID
 
-`qwen3.5-9b` is an alias. Foundry Local maps it to concrete model variants. The
-workshop explicitly selects `qwen3.5-9b-generic-cpu` so catalog ordering cannot
+`qwen3.5-4b` is an alias. Foundry Local maps it to concrete model variants. The
+workshop explicitly selects `qwen3.5-4b-generic-cpu` so catalog ordering cannot
 select the GPU provider.
 
 The selected concrete ID is printed by the preparation script and by

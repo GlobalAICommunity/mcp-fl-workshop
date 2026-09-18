@@ -104,7 +104,7 @@ without a cloud endpoint.
 
 ## Model alias
 
-A hardware-independent catalog name such as `qwen3.5-9b`. This workshop resolves
+A hardware-independent catalog name such as `qwen3.5-4b`. This workshop resolves
 the alias and explicitly selects its CPU variant.
 
 ## Prompt injection

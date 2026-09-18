@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3.5-9b"
+DEFAULT_MODEL = "qwen3.5-4b"
 
 
 class ConfigError(RuntimeError):
@@ -41,6 +41,18 @@ class LocalModel:
 def get_model_alias() -> str:
     """Return the hardware-independent model alias selected for the lab."""
     return os.getenv("MCP_WORKSHOP_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+
+
+def get_max_tokens() -> int:
+    """Return the configured positive output-token budget."""
+    token_setting = os.getenv("MCP_WORKSHOP_MAX_TOKENS", "").strip() or "64"
+    try:
+        max_tokens = int(token_setting)
+    except ValueError as exc:
+        raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.") from exc
+    if max_tokens < 1:
+        raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.")
+    return max_tokens
 
 
 def get_foundry_configuration():
@@ -188,13 +200,7 @@ def get_local_model() -> LocalModel:
     """Load the pre-cached Foundry Local model and return its chat client."""
     from foundry_local_sdk import FoundryLocalManager
 
-    token_setting = os.getenv("MCP_WORKSHOP_MAX_TOKENS", "").strip() or "64"
-    try:
-        max_tokens = int(token_setting)
-    except ValueError as exc:
-        raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.") from exc
-    if max_tokens < 1:
-        raise ConfigError("MCP_WORKSHOP_MAX_TOKENS must be a positive integer.")
+    max_tokens = get_max_tokens()
 
     if FoundryLocalManager.instance is None:
         FoundryLocalManager.initialize(get_foundry_configuration())

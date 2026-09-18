@@ -167,7 +167,6 @@ def check_local_model() -> None:
         report(BAD, "Foundry Local model", str(exc))
         return
 
-    local_model.client.settings.max_tokens = 64
     local_model.client.settings.tool_choice = {"type": "required"}
     try:
         mc.complete_agent_smoke_test(local_model.client)
