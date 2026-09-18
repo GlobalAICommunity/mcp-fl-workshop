@@ -41,14 +41,21 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 2.0.1, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
+[ .... ] Foundry Local model - locating and loading the cached CPU model; this can take several minutes
+[ .... ] Foundry Local model - model loaded; running two CPU completions
+[ .... ] Foundry Local model - get_weather completion, attempt 1 of 2
+[ .... ] Foundry Local model - post-tool final_answer completion, attempt 1 of 2
 [  ok  ] Foundry Local model - qwen3.5-4b completed get_weather -> final_answer
 
 All good - you are ready for the offline workshop.
 ```
 
-The first model load can take a little longer than later calls. The check proves
-both model turns; finding model files or producing only the first call is not
-enough.
+The `[ .... ]` lines are progress, not failures. Model loading and each CPU
+completion can take several minutes. While `python.exe` is using CPU or memory,
+leave the check running. If the same stage remains for more than five minutes
+and `python.exe` is using almost no CPU, press `Ctrl+C` and ask the facilitator
+for help. The check proves both model turns; finding model files or producing
+only the first call is not enough.
 
 ## 3. If PowerShell blocks the script
 

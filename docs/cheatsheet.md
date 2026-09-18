@@ -122,8 +122,8 @@ repeat up to MAX_TURNS:
 
 Set `tool_choice` to `{"type": "required"}` and include a host-only
 `final_answer(answer)` function alongside the MCP tools. Foundry Local SDK 2.0.1
-returns typed tool-call items for `qwen3.5-4b`; the workshop adapter exposes
-them through the compact response shape used by the agent. The host handles
+returns an OpenAI-compatible JSON response for `qwen3.5-4b`; the workshop
+adapter translates it to the compact response shape used by the agent. The host handles
 `final_answer` without forwarding it to MCP. For flight questions, it checks that the
 answer contains a returned flight number, departure, duration, INR price, and
 the fictional-fare disclosure. If any are absent, it inserts a deterministic

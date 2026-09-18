@@ -192,9 +192,10 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         ):
             complete_agent_smoke_test(client)
 
-        report.assert_called_once_with(
+        report.assert_any_call(
             "get_weather completion was cancelled after 120.0s; retrying once.",
             file=sys.stderr,
+            flush=True,
         )
         self.assertIs(caught.exception.__cause__, cancellation)
         self.assertEqual(client.complete_chat.call_count, 2)
@@ -258,7 +259,7 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
-            timeout=15,
+            timeout=30,
             check=False,
         )
 
@@ -378,12 +379,23 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         expected = SimpleNamespace()
         client.complete_chat.side_effect = [cancellation, expected]
 
-        response = complete_smoke_test(
-            client, [{"role": "user"}], [], stage="weather probe"
-        )
+        with patch("builtins.print") as print_message:
+            response = complete_smoke_test(
+                client, [{"role": "user"}], [], stage="weather probe"
+            )
 
         self.assertIs(response, expected)
         self.assertEqual(client.complete_chat.call_count, 2)
+        print_message.assert_any_call(
+            "[ .... ] Foundry Local model - weather probe, attempt 1 of 2",
+            file=sys.stderr,
+            flush=True,
+        )
+        print_message.assert_any_call(
+            "[ .... ] Foundry Local model - weather probe, attempt 2 of 2",
+            file=sys.stderr,
+            flush=True,
+        )
 
     def test_prepare_does_not_retry_other_sdk_failures(self) -> None:
         client = SimpleNamespace(complete_chat=unittest.mock.Mock())

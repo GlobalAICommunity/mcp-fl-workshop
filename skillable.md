@@ -65,12 +65,20 @@ A ready image ends with output similar to:
 [  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 2.0.1, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
+[ .... ] Foundry Local model - locating and loading the cached CPU model; this can take several minutes
+[ .... ] Foundry Local model - model loaded; running two CPU completions
+[ .... ] Foundry Local model - get_weather completion, attempt 1 of 2
+[ .... ] Foundry Local model - post-tool final_answer completion, attempt 1 of 2
 [  ok  ] Foundry Local model - qwen3.5-4b completed get_weather -> final_answer
 
 All good - you are ready for the offline workshop.
 ```
 
-the first model load can take a little longer than later calls.
+The **[ .... ]** lines are progress, not failures. Model loading and each CPU
+completion can take several minutes. While **python.exe** is using CPU or memory,
+leave the check running. If the same stage remains for more than five minutes
+and **python.exe** is using almost no CPU, press **Ctrl+C** and ask the facilitator
+for help.
 
 
 ### 3. If Any Check Fails
@@ -538,10 +546,10 @@ response = await asyncio.to_thread(
 
 no local HTTP endpoint is required.
 
-Foundry Local SDK 2.0.1 returns typed tool-call items for this model when
-**tool_choice** is **required**. The workshop adapter exposes them through the
-compact response shape used by this lesson. The host first filters the four MCP
-travel tools to those relevant to the question, then adds one host-only
+Foundry Local SDK 2.0.1 returns an OpenAI-compatible JSON response when
+**tool_choice** is **required**. The workshop adapter translates it to the compact
+response shape used by this lesson. The host first filters the four MCP travel
+tools to those relevant to the question, then adds one host-only
 **final_answer** function. Ambiguous questions retain all tools. The model
 chooses a travel tool while it needs data and calls **final_answer** when it is
 ready to stop. That last function is handled by the host and is never sent to

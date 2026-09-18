@@ -93,8 +93,8 @@ Open `src/solution/agent_raw.py` and follow this sequence:
 8. append each result with the matching `tool_call_id`
 9. repeat until `final_answer` is called or `MAX_TURNS` is reached
 
-Foundry Local SDK 2.0.1 returns typed tool-call items in required-tool mode. The
-workshop adapter exposes them through the lesson's compact response shape.
+Foundry Local SDK 2.0.1 returns an OpenAI-compatible JSON response in
+required-tool mode. The workshop adapter translates it to the lesson's compact response shape.
 `final_answer` supplies a stopping signal without being forwarded to MCP.
 Keeping structured requests and matching call IDs preserves conversation
 meaning; removing their duplicate raw representation prevents repeated calls.
