@@ -47,9 +47,8 @@ async def main() -> None:
         print("  text      :", weather.content[0].text)
         print()
 
-        # 3. Tool failures come back as a result with is_error set, not as an
-        #    exception. That is deliberate: the model is meant to read the error
-        #    and try again.
+        # 3. Tool failures raise by default. Disable automatic raising only when
+        #    the caller will inspect the error result and recover.
         oops = await client.call_tool(
             "get_weather", {"city": "Atlantis"}, raise_on_error=False
         )
