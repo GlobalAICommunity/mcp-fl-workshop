@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 load_dotenv()
 
-DEFAULT_MODEL = "qwen3.5-0.8b"
+DEFAULT_MODEL = "qwen3.5-4b-generic-cpu"
 
 
 class ConfigError(RuntimeError):

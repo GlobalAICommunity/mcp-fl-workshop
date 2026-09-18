@@ -1,7 +1,7 @@
 # Foundry Local model
 
-The workshop has one supported runtime path: Foundry Local with cached alias
-`qwen3.5-0.8b`. This compact tool-calling model runs on the workshop CPU.
+The workshop has one supported runtime path: Foundry Local with cached CPU model
+`qwen3.5-4b-generic-cpu`. This tool-calling model runs on the workshop CPU.
 
 The direct Python dependency is pinned in `requirements-server.txt`:
 
@@ -14,8 +14,8 @@ the accepted Windows VM image.
 
 ## How the model is used
 
-`src/model_config.py` initializes `FoundryLocalManager` once, resolves the alias
-through the catalog, explicitly selects its CPU variant, checks
+`src/model_config.py` initializes `FoundryLocalManager` once, resolves the model
+through the catalog, confirms its CPU variant, checks
 `supports_tool_calling` and `is_cached`, loads the model if needed, and returns
 its native chat client.
 
@@ -29,11 +29,11 @@ Prompts, tool requests, and tool results stay on the VM. Model calls run in the
 host process, while MCP requests and results cross a local stdio subprocess
 boundary.
 
-## Alias versus model ID
+## Catalog name versus model ID
 
-`qwen3.5-0.8b` is an alias. Foundry Local maps it to concrete model
-variants. The workshop explicitly selects the highest-priority CPU variant so
-catalog ordering cannot select an unsupported GPU provider.
+`qwen3.5-4b-generic-cpu` is the CPU-specific catalog name. Foundry Local maps it
+to a versioned concrete model ID. The workshop confirms the catalog entry has a
+CPU variant so it cannot select an unsupported GPU provider.
 
 The selected concrete ID is printed by the preparation script and by
 `model_config.describe()`.

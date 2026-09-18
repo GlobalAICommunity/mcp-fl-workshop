@@ -102,10 +102,10 @@ An on-device model runtime and SDK. The workshop uses the WinML Python package,
 loads a model from the local catalog and cache, and calls its native chat client
 without a cloud endpoint.
 
-## Model alias
+## Model catalog name
 
-A hardware-independent catalog name such as `qwen3.5-0.8b`. This workshop resolves
-the alias and lets Foundry Local select the best variant for the VM hardware.
+A catalog name such as `qwen3.5-4b-generic-cpu`. This workshop resolves
+the name to a versioned CPU model ID.
 
 ## Prompt injection
 

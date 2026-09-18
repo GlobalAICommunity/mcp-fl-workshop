@@ -9,7 +9,7 @@ The tested stack is:
 - FastMCP `4.0.0`
 - MCP protocol revision `2026-07-28`
 - Foundry Local Python SDK `foundry-local-sdk-winml==1.2.4`
-- Foundry Local model alias `qwen3.5-0.8b`
+- Foundry Local CPU model `qwen3.5-4b-generic-cpu`
 - Python 3.11 or newer on Windows
 
 No cloud account, API key, package install, model download, or event Wi-Fi is
@@ -63,7 +63,7 @@ reproduce and prevents accidental real-world booking decisions.
 flowchart LR
     U[Attendee] --> B[Local browser]
     B --> A[Handwritten agent loop]
-    A <--> F[Foundry Local qwen3.5-0.8b]
+    A <--> F[Foundry Local qwen3.5-4b-generic-cpu]
     A <-->|FastMCP over stdio| S[Bharat Travel Desk]
     S --> D[Deterministic India travel data]
 ```

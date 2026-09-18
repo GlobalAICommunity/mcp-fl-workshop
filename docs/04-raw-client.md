@@ -141,9 +141,8 @@ model call: MCP is working before any agent behavior is added.
 
 ## Part B: connect the local model
 
-`src/model_config.py` asks the Foundry Local singleton for the
-hardware-independent alias `qwen3.5-0.8b` and selects its CPU variant
-for the VM hardware. It rejects
+`src/model_config.py` asks the Foundry Local singleton for the CPU model
+`qwen3.5-4b-generic-cpu`. It rejects
 unknown, non-tool-capable, or uncached models. If needed, it loads the cached
 model and returns its native chat client.
 
