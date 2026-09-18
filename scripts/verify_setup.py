@@ -172,7 +172,15 @@ def check_local_model() -> None:
     try:
         mc.complete_agent_smoke_test(local_model.client)
     except Exception as exc:  # noqa: BLE001
-        report(BAD, "Foundry Local model", f"inference failed: {exc}")
+        report(
+            BAD,
+            "Foundry Local model",
+            str(exc),
+            "Close memory-intensive apps and rerun with "
+            "$env:MCP_WORKSHOP_LOG_DIR='.\\foundry-local-logs'. A repeated "
+            "cancellation near 120 seconds means this VM image has not passed "
+            "model acceptance.",
+        )
         return
     report(
         OK,

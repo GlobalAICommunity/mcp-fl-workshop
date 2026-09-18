@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -59,19 +60,26 @@ def get_foundry_configuration():
     return config
 
 
-def complete_smoke_test(client, messages: list[dict], tools: list[dict]):
+def complete_smoke_test(
+    client, messages: list[dict], tools: list[dict], stage: str = "inference"
+):
     """Retry one transient cancellation for an idempotent model smoke test."""
     from foundry_local_sdk.exception import FoundryLocalException
 
     for attempt in range(2):
+        started = time.monotonic()
         try:
             return client.complete_chat(messages, tools)
         except FoundryLocalException as exc:
+            elapsed = time.monotonic() - started
             cancelled = "operation was cancelled" in str(exc).lower()
             if not cancelled or attempt == 1:
-                raise
+                raise ConfigError(
+                    f"{stage} failed after {elapsed:.1f}s on attempt {attempt + 1}: "
+                    f"{exc}"
+                ) from exc
             print(
-                "First inference was cancelled; retrying the idempotent smoke test once.",
+                f"{stage} was cancelled after {elapsed:.1f}s; retrying once.",
                 file=sys.stderr,
             )
     raise AssertionError("unreachable")
@@ -104,7 +112,9 @@ def complete_agent_smoke_test(client) -> str:
         },
     }
     messages = [{"role": "user", "content": "Use get_weather for Pune."}]
-    first = complete_smoke_test(client, messages, [weather_tool])
+    first = complete_smoke_test(
+        client, messages, [weather_tool], stage="get_weather completion"
+    )
     calls = first.choices[0].message.tool_calls or []
     if not calls or calls[0].function.name != "get_weather":
         raise ConfigError("Model did not emit the required get_weather call.")
@@ -133,7 +143,9 @@ def complete_agent_smoke_test(client) -> str:
             },
         ]
     )
-    second = complete_smoke_test(client, messages, [final_tool])
+    second = complete_smoke_test(
+        client, messages, [final_tool], stage="post-tool final_answer completion"
+    )
     final_calls = second.choices[0].message.tool_calls or []
     if not final_calls or final_calls[0].function.name != "final_answer":
         raise ConfigError("Model did not emit final_answer after the tool result.")

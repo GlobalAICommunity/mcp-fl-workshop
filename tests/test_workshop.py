@@ -139,6 +139,36 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(second_messages[-1]["tool_call_id"], "weather-1")
         self.assertEqual(second_tools[0]["function"]["name"], "final_answer")
 
+    def test_agent_smoke_test_identifies_post_tool_cancellation(self) -> None:
+        first_call = SimpleNamespace(
+            id="weather-1",
+            function=SimpleNamespace(
+                name="get_weather", arguments='{"city":"Pune"}'
+            ),
+        )
+        first_response = SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=SimpleNamespace(tool_calls=[first_call]))
+            ]
+        )
+        cancellation = FoundryLocalException(
+            "Error during chat completion: Operation was cancelled"
+        )
+        client = SimpleNamespace(complete_chat=unittest.mock.Mock())
+        client.complete_chat.side_effect = [
+            first_response,
+            cancellation,
+            cancellation,
+        ]
+
+        with self.assertRaisesRegex(
+            ConfigError, "post-tool final_answer completion failed"
+        ) as caught:
+            complete_agent_smoke_test(client)
+
+        self.assertIs(caught.exception.__cause__, cancellation)
+        self.assertEqual(client.complete_chat.call_count, 3)
+
     async def test_successful_weather_call_leaves_only_final_answer(self) -> None:
         chat_client = WeatherChatClient()
 
@@ -288,7 +318,9 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         expected = SimpleNamespace()
         client.complete_chat.side_effect = [cancellation, expected]
 
-        response = complete_smoke_test(client, [{"role": "user"}], [])
+        response = complete_smoke_test(
+            client, [{"role": "user"}], [], stage="weather probe"
+        )
 
         self.assertIs(response, expected)
         self.assertEqual(client.complete_chat.call_count, 2)
@@ -298,10 +330,10 @@ class WorkshopTests(unittest.IsolatedAsyncioTestCase):
         failure = FoundryLocalException("model failed")
         client.complete_chat.side_effect = failure
 
-        with self.assertRaises(FoundryLocalException) as caught:
+        with self.assertRaisesRegex(ConfigError, "inference failed") as caught:
             complete_smoke_test(client, [{"role": "user"}], [])
 
-        self.assertIs(caught.exception, failure)
+        self.assertIs(caught.exception.__cause__, failure)
         client.complete_chat.assert_called_once()
 
     def test_model_output_budget(self) -> None:
