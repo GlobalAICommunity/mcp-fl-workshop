@@ -24,6 +24,7 @@ from model_config import (  # noqa: E402
     complete_agent_smoke_test,
     get_foundry_configuration,
     get_max_tokens,
+    NativeChatClient,
     select_cpu_variant,
 )
 
@@ -73,9 +74,7 @@ def main() -> int:
         print("Loading model for a tool-calling smoke test...")
         model.load()
 
-    client = model.get_chat_client()
-    client.settings.temperature = 0.0
-    client.settings.max_tokens = get_max_tokens()
+    client = NativeChatClient(model, get_max_tokens())
     client.settings.tool_choice = {"type": "required"}
     started = time.monotonic()
     try:

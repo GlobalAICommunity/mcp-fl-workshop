@@ -144,7 +144,7 @@ model call: MCP is working before any agent behavior is added.
 `src/model_config.py` asks the Foundry Local singleton for model alias
 `qwen3.5-4b` and selects its CPU variant. It rejects
 unknown, non-tool-capable, or uncached models. If needed, it loads the cached
-model and returns its native chat client.
+model and returns the workshop adapter around a typed native `ChatSession`.
 
 The image builder performed the download earlier. Open
 [src/solution/agent_raw.py](../src/solution/agent_raw.py) and find the start of
@@ -177,8 +177,9 @@ response = await asyncio.to_thread(
 
 No local HTTP endpoint is required.
 
-Foundry Local SDK 1.2.4 reliably returns structured calls for this model when
-`tool_choice` is `required`. The agent therefore supplies the four MCP travel
+Foundry Local SDK 2.0.1 returns typed `ToolCallItem` values for this model when
+`tool_choice` is `required`. The workshop adapter translates those values to the
+small response shape used by this lesson. The agent supplies the four MCP travel
 tools plus one host-only `final_answer` function. The model chooses a travel
 tool while it needs data and calls `final_answer` when it is ready to stop. That
 last function is handled by the host and is never sent to the MCP server.

@@ -53,7 +53,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 the check does not download anything. It verifies:
 
 - Python 3.11 or newer.
-- FastMCP 4.0.0 and Foundry Local SDK 1.2.4 in **.venv**.
+- FastMCP 4.0.0 and Foundry Local SDK 2.0.1 in **.venv**.
 - The FastMCP server and protocol negotiation.
 - The browser application import.
 - A cached CPU variant of **qwen3.5-4b** that can call a tool and finish after its result.
@@ -62,7 +62,7 @@ A ready image ends with output similar to:
 
 ```text
 [  ok  ] Python version - 3.11
-[  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match
+[  ok  ] Virtualenv - FastMCP 4.0.0, Foundry Local SDK 2.0.1, all direct pins match
 [  ok  ] MCP server - 4 tools, protocol 2026-07-28, city Pune
 [  ok  ] Browser app - ready
 [  ok  ] Foundry Local model - qwen3.5-4b completed get_weather -> final_answer
@@ -538,12 +538,14 @@ response = await asyncio.to_thread(
 
 no local HTTP endpoint is required.
 
-Foundry Local SDK 1.2.4 returns structured calls for this model when
-**tool_choice** is **required**. The host first filters the four MCP travel tools
-to those relevant to the question, then adds one host-only **final_answer**
-function. Ambiguous questions retain all tools. The model chooses a travel tool
-while it needs data and calls **final_answer** when it is ready to stop. That last
-function is handled by the host and is never sent to the MCP server.
+Foundry Local SDK 2.0.1 returns typed tool-call items for this model when
+**tool_choice** is **required**. The workshop adapter exposes them through the
+compact response shape used by this lesson. The host first filters the four MCP
+travel tools to those relevant to the question, then adds one host-only
+**final_answer** function. Ambiguous questions retain all tools. The model
+chooses a travel tool while it needs data and calls **final_answer** when it is
+ready to stop. That last function is handled by the host and is never sent to
+the MCP server.
 
 ### The Schema Adapter
 

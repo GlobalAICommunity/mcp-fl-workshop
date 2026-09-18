@@ -198,14 +198,14 @@ that environment, stopping if either command fails:
 Verify the pinned packages:
 
 ```powershell
-.\.venv\Scripts\python.exe -c "import importlib.metadata as metadata; print(metadata.version('fastmcp')); print(metadata.version('foundry-local-sdk-winml'))"
+.\.venv\Scripts\python.exe -c "import importlib.metadata as metadata; print(metadata.version('fastmcp')); print(metadata.version('foundry-local-sdk'))"
 ```
 
 Expected versions:
 
 ```text
 4.0.0
-1.2.4
+2.0.1
 ```
 
 Do not install an unpinned replacement immediately before an event. Update and
@@ -358,7 +358,7 @@ if needed. Do not repeat package installation or model downloads. Run:
 Acceptance requires:
 
 - FastMCP exactly 4.0.0
-- Foundry Local SDK exactly 1.2.4
+- Foundry Local SDK exactly 2.0.1
 - negotiated MCP revision `2026-07-28`
 - four reference tools and a structured Pune result
 - browser app import success
@@ -416,7 +416,7 @@ For each image release, record:
 | Execution policy and trusted-script unblocking verified | |
 | Python version | |
 | FastMCP version | `4.0.0` |
-| Foundry Local SDK | `1.2.4` |
+| Foundry Local SDK | `2.0.1` |
 | Model alias and concrete ID | `qwen3.5-4b` / record the ID printed by `prepare-vm` |
 | VM hardware profile | |
 | Online preparation date | |

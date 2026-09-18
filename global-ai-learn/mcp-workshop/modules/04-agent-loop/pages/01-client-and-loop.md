@@ -43,7 +43,8 @@ errors and servers that do not publish structured output.
 
 `src/model_config.py` resolves `qwen3.5-4b` through the Foundry Local catalog,
 then lets the SDK select the best variant for the VM hardware. It rejects unknown,
-non-tool-capable, or uncached models before returning a native chat client:
+non-tool-capable, or uncached models before returning a workshop adapter backed
+by a typed native `ChatSession`:
 
 ```python
 local_model = get_local_model()
@@ -51,8 +52,9 @@ llm = local_model.client
 ```
 
 The image builder performed all downloads. The attendee path only loads local
-assets. Because `complete_chat` is synchronous, the asynchronous host runs it in
-a worker thread:
+assets. `complete_chat` is the workshop adapter contract; internally it uses the
+SDK v2 typed request and item APIs. Because the adapter is synchronous, the
+asynchronous host runs it in a worker thread:
 
 ```python
 response = await asyncio.to_thread(llm.complete_chat, messages, tools)
@@ -91,8 +93,9 @@ Open `src/solution/agent_raw.py` and follow this sequence:
 8. append each result with the matching `tool_call_id`
 9. repeat until `final_answer` is called or `MAX_TURNS` is reached
 
-Foundry Local SDK 1.2.4 reliably parses this model's calls in required-tool
-mode. `final_answer` supplies a stopping signal without being forwarded to MCP.
+Foundry Local SDK 2.0.1 returns typed tool-call items in required-tool mode. The
+workshop adapter exposes them through the lesson's compact response shape.
+`final_answer` supplies a stopping signal without being forwarded to MCP.
 Keeping structured requests and matching call IDs preserves conversation
 meaning; removing their duplicate raw representation prevents repeated calls.
 For a flight answer, the host also checks for a returned flight number,

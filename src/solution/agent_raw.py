@@ -8,11 +8,9 @@ This is the whole trick behind every "AI agent" framework, in about forty lines:
     4. Run travel tools through MCP and append their results.
     5. Repeat until the model calls the host-only final_answer tool.
 
-Foundry Local supplies an OpenAI-compatible native chat client. The model,
-prompts, tool calls, and results all remain on the workshop VM.
-
-SDK 1.2.4 reliably parses this model's calls in required-tool mode. A host-only
-final_answer function gives the loop an explicit, structured stopping signal.
+Foundry Local v2 supplies typed native chat sessions. The model, prompts, tool
+calls, and results all remain on the workshop VM. A host-only final_answer
+function gives the loop an explicit, structured stopping signal.
 
 Run it:
 

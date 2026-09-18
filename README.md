@@ -8,7 +8,7 @@ The tested stack is:
 
 - FastMCP `4.0.0`
 - MCP protocol revision `2026-07-28`
-- Foundry Local Python SDK `foundry-local-sdk-winml==1.2.4`
+- Foundry Local Python SDK `foundry-local-sdk==2.0.1`
 - Foundry Local model alias `qwen3.5-4b`
 - Python 3.11 or newer on Windows
 

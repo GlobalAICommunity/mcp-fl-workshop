@@ -22,13 +22,7 @@ def main() -> int:
         "--mode", choices=("baseline", "required", "plain"), required=True,
         help="baseline: no tools/history; plain/required: synthetic tool history",
     )
-    parser.add_argument(
-        "--text-format", action="store_true",
-        help="Explicitly request text response format (baseline/plain only)",
-    )
     args = parser.parse_args()
-    if args.text_format and args.mode == "required":
-        parser.error("--text-format is only supported with baseline or plain mode")
     instruction = (
         "Call final_answer alone with one short sentence."
         if args.mode == "required"
@@ -72,12 +66,11 @@ def main() -> int:
         client.settings.tool_choice = {
             "type": "required" if args.mode == "required" else "none"
         }
-        client.settings.response_format = {"type": "text"} if args.text_format else None
         print(f"[{describe(model)}]", flush=True)
         scenario = "No tools or history" if args.mode == "baseline" else "Synthetic tool history"
         print(
             f"{scenario}; mode={args.mode}; "
-            f"response_format={'text' if args.text_format else 'runtime default'}; "
+            "API=Foundry Local v2 typed ChatSession; "
             f"max_tokens={client.settings.max_tokens}; no MCP tools executed.",
             flush=True,
         )

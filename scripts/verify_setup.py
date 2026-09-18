@@ -22,7 +22,7 @@ DEFAULT_VENV_PYTHON = REPO_ROOT / ".venv" / (
 VENV_PYTHON = Path(os.getenv("MCP_WORKSHOP_PYTHON", DEFAULT_VENV_PYTHON))
 EXPECTED_PACKAGE_VERSIONS = {
     "fastmcp": "4.0.0",
-    "foundry-local-sdk-winml": "1.2.4",
+    "foundry-local-sdk": "2.0.1",
     "python-dotenv": "1.2.3",
     "starlette": "1.6.0",
     "uvicorn": "0.52.4",
@@ -90,7 +90,7 @@ def check_server_venv() -> None:
         report(
             OK,
             "Virtualenv",
-            "FastMCP 4.0.0, Foundry Local SDK 1.2.4, all direct pins match",
+            "FastMCP 4.0.0, Foundry Local SDK 2.0.1, all direct pins match",
         )
     else:
         report(

@@ -11,14 +11,10 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
-
-if TYPE_CHECKING:
-    from foundry_local_sdk.openai import ChatClient
 
 load_dotenv()
 
@@ -31,11 +27,169 @@ class ConfigError(RuntimeError):
 
 @dataclass(frozen=True)
 class LocalModel:
-    """A loaded Foundry Local model and its native chat client."""
+    """A loaded Foundry Local model and its v2 session adapter."""
 
     alias: str
     model_id: str
-    client: ChatClient
+    client: NativeChatClient
+
+
+@dataclass
+class ChatSettings:
+    """Workshop settings translated to Foundry Local v2 request options."""
+
+    max_tokens: int
+    temperature: float = 0.0
+    tool_choice: dict | str | None = None
+
+
+@dataclass(frozen=True)
+class CompletionFunction:
+    name: str
+    arguments: str
+
+
+@dataclass(frozen=True)
+class CompletionToolCall:
+    id: str
+    function: CompletionFunction
+    type: str = "function"
+
+
+@dataclass(frozen=True)
+class CompletionMessage:
+    content: str
+    tool_calls: list[CompletionToolCall]
+    role: str = "assistant"
+
+
+@dataclass(frozen=True)
+class CompletionChoice:
+    message: CompletionMessage
+    finish_reason: str
+    index: int = 0
+
+
+@dataclass(frozen=True)
+class CompletionResponse:
+    choices: list[CompletionChoice]
+    usage: dict[str, int]
+
+    def model_dump_json(self, indent: int | None = None) -> str:
+        """Provide the JSON helper used by the diagnostic script."""
+        return json.dumps(asdict(self), indent=indent)
+
+
+class NativeChatClient:
+    """Adapt workshop chat dictionaries to Foundry Local v2 typed sessions."""
+
+    def __init__(self, model, max_tokens: int) -> None:
+        self.model = model
+        self.settings = ChatSettings(max_tokens=max_tokens)
+
+    def complete_chat(
+        self, messages: list[dict], tools: list[dict] | None = None
+    ) -> CompletionResponse:
+        from foundry_local_sdk import (
+            ChatSession,
+            MessageItem,
+            Request,
+            RequestOptions,
+            SearchOptions,
+            TextItem,
+            TextItemType,
+            ToolCallItem,
+            ToolChoice,
+            ToolResultItem,
+        )
+
+        choice = self.settings.tool_choice
+        if isinstance(choice, dict):
+            choice = choice.get("type")
+        tool_choice = ToolChoice(choice) if choice else None
+        options = RequestOptions(
+            search=SearchOptions(
+                temperature=self.settings.temperature,
+                max_output_tokens=self.settings.max_tokens,
+            ),
+            tool_choice=tool_choice,
+        )
+
+        with ChatSession(self.model) as session:
+            session.set_options(options)
+            for tool in tools or []:
+                function = tool["function"]
+                session.add_tool_definition(
+                    function["name"],
+                    function.get("description", ""),
+                    json.dumps(function["parameters"], separators=(",", ":")),
+                )
+
+            with Request() as request:
+                for message in messages:
+                    role = message["role"]
+                    if role == "system":
+                        request.add_item(MessageItem.system(message.get("content", "")))
+                    elif role == "user":
+                        request.add_item(MessageItem.user(message.get("content", "")))
+                    elif role == "assistant":
+                        calls = message.get("tool_calls") or []
+                        if calls:
+                            for call in calls:
+                                function = call["function"]
+                                request.add_item(
+                                    ToolCallItem(
+                                        call["id"],
+                                        function["name"],
+                                        function.get("arguments", "{}"),
+                                    )
+                                )
+                        elif message.get("content"):
+                            request.add_item(
+                                MessageItem.assistant(message["content"])
+                            )
+                    elif role == "tool":
+                        request.add_item(
+                            ToolResultItem(
+                                message["tool_call_id"], message.get("content", "")
+                            )
+                        )
+                    else:
+                        raise ConfigError(f"Unsupported chat role: {role!r}")
+
+                with session.process_request(request) as response:
+                    text_parts: list[str] = []
+                    calls: list[CompletionToolCall] = []
+                    for item in response:
+                        if isinstance(item, TextItem) and item.type != TextItemType.REASONING:
+                            text_parts.append(item.text)
+                        elif isinstance(item, ToolCallItem):
+                            calls.append(
+                                CompletionToolCall(
+                                    id=item.call_id,
+                                    function=CompletionFunction(
+                                        name=item.name, arguments=item.arguments
+                                    ),
+                                )
+                            )
+                    usage = response.get_usage()
+                    finish_reason = response.finish_reason.name.lower()
+
+        return CompletionResponse(
+            choices=[
+                CompletionChoice(
+                    message=CompletionMessage(
+                        content="".join(text_parts), tool_calls=calls
+                    ),
+                    finish_reason=finish_reason,
+                )
+            ],
+            usage={
+                "prompt_tokens": usage.prompt_tokens,
+                "completion_tokens": usage.completion_tokens,
+                "total_tokens": usage.total_tokens,
+            },
+        )
 
 
 def get_model_alias() -> str:
@@ -62,7 +216,7 @@ def get_foundry_configuration():
     config = Configuration(app_name="mcp-fastmcp-workshop")
     log_dir = os.getenv("MCP_WORKSHOP_LOG_DIR", "").strip()
     if log_dir:
-        from foundry_local_sdk.logging_helper import LogLevel
+        from foundry_local_sdk import LogLevel
 
         logs_path = Path(log_dir).expanduser().resolve()
         logs_path.mkdir(parents=True, exist_ok=True)
@@ -225,9 +379,7 @@ def get_local_model() -> LocalModel:
     if not model.is_loaded:
         model.load()
 
-    client = model.get_chat_client()
-    client.settings.temperature = 0.0
-    client.settings.max_tokens = max_tokens
+    client = NativeChatClient(model, max_tokens)
     return LocalModel(alias=alias, model_id=model.id, client=client)
 
 

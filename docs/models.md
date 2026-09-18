@@ -6,7 +6,7 @@ The workshop has one supported runtime path: Foundry Local with cached alias
 The direct Python dependency is pinned in `requirements-server.txt`:
 
 ```text
-foundry-local-sdk-winml==1.2.4
+foundry-local-sdk==2.0.1
 ```
 
 `requirements-lock.txt` records the complete dependency closure used to build
@@ -17,12 +17,16 @@ the accepted Windows VM image.
 `src/model_config.py` initializes `FoundryLocalManager` once, resolves the alias
 through the catalog, explicitly selects its CPU variant, checks
 `supports_tool_calling` and `is_cached`, loads the model if needed, and returns
-its native chat client.
+a workshop adapter backed by the SDK v2 typed `ChatSession` API.
 
 ```python
 local_model = get_local_model()
 response = local_model.client.complete_chat(messages, tools)
 ```
+
+`complete_chat` is the workshop adapter contract, not the deprecated SDK v1
+chat-client API. It translates message dictionaries and tool schemas into typed
+`Request`, `MessageItem`, `ToolCallItem`, and `ToolResultItem` values.
 
 There is no API key, account, cloud endpoint, or separate local HTTP service.
 Prompts, tool requests, and tool results stay on the VM. Model calls run in the
