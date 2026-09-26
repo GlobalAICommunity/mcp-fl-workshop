@@ -20,12 +20,11 @@
     }
   },
   "postCreateCommand": [
-    "/usr/bin/env",
-    "MCP_WORKSHOP_PYTHON=/opt/workshop-venv/bin/python",
-    "/opt/workshop-venv/bin/python",
-    "scripts/verify_setup.py",
-    "--skip-model"
+    "bash",
+    "docs/codespaces/setup.sh",
+    "--accept-cli-license"
   ],
+  "waitFor": "postCreateCommand",
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python"],

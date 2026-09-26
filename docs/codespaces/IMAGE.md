@@ -18,8 +18,10 @@ Linux-specific [lock file](requirements-linux.lock).
 The [Foundry Local license](https://github.com/microsoft/foundry-local/blob/main/LICENSE)
 licenses the SDK under MIT but prohibits sharing or publishing the CLI.
 Consequently, [setup.sh](setup.sh) obtains CLI preview 0.10.0 directly from
-Microsoft only after each user explicitly accepts its terms. Model weights
-are also downloaded per user, under their own license. Do not publish a
+Microsoft during each user's `postCreateCommand`, never during image creation.
+The learner guide tells users to review the terms before starting this
+configuration, which runs with `--accept-cli-license`. Model weights are also
+downloaded per user, under their own license. Do not publish a
 `docker commit` of a container after running setup.
 
 | Component | Image contents |
@@ -28,7 +30,7 @@ are also downloaded per user, under their own license. Do not publish a
 | Python environment | `/opt/workshop-venv`, selected through `PATH` |
 | Dependency record | `/opt/workshop/requirements-linux.lock` |
 | Workshop source | Cloned by Codespaces, not copied into the image |
-| CLI and CPU model | Downloaded separately in the user's Codespace |
+| CLI and CPU model | Downloaded automatically after the user's Codespace is created |
 | Platform | `linux/amd64`; this is not a multi-architecture image |
 
 ### Published release
@@ -208,8 +210,12 @@ For faster workspace creation, consider
 [Codespaces prebuilds](https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds).
 Prebuild only the redistributable environment: **do not** move the CLI setup
 into `onCreateCommand`, `updateContentCommand`, or an image build layer.
-The current `postCreateCommand` checks packages without downloading the CLI
-or model.
+The `postCreateCommand` runs the full setup in each user's Codespace, outside
+the shared prebuild. It installs or repairs requirements, verifies the SDK
+native runtime, downloads the CLI and CPU model, and runs the full readiness
+check. `waitFor: postCreateCommand` prevents completion before setup finishes.
+This change uses the same published image; it does not require a new image
+release.
 
 ## Export an archive instead
 

@@ -20,9 +20,20 @@ export VIRTUAL_ENV="/opt/workshop-venv"
 export MCP_WORKSHOP_PYTHON="$VIRTUAL_ENV/bin/python"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 if [[ ! -x "$MCP_WORKSHOP_PYTHON" ]]; then
-    echo "Workshop Python is missing at $MCP_WORKSHOP_PYTHON. Create or rebuild the Codespace with .devcontainer/devcontainer.json; do not install the Windows requirements-lock.txt." >&2
-    exit 1
+    if [[ ! -x /usr/local/bin/python ]]; then
+        echo "The workshop image's base Python is missing. Rebuild with .devcontainer/devcontainer.json before running setup." >&2
+        exit 1
+    fi
+    echo "Creating the workshop Python environment..."
+    sudo /usr/local/bin/python -m venv "$VIRTUAL_ENV"
 fi
+
+echo "Installing the pinned Linux workshop requirements..."
+sudo "$MCP_WORKSHOP_PYTHON" -m pip install --no-input --disable-pip-version-check \
+    -r requirements-server.txt -c docs/codespaces/requirements-linux.lock
+sudo "$MCP_WORKSHOP_PYTHON" -m pip check
+echo "Installing and verifying the Foundry Local SDK native runtime..."
+sudo "$VIRTUAL_ENV/bin/foundry-local-install"
 "$MCP_WORKSHOP_PYTHON" scripts/verify_setup.py --skip-model
 
 version="0.10.0"

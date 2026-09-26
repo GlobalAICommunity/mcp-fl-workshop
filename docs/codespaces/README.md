@@ -78,6 +78,14 @@ environment. GitHub reads
 [.devcontainer/devcontainer.json](../../.devcontainer/devcontainer.json)
 automatically and starts the published workshop image.
 
+**Before creating the Codespace**, review the
+[Foundry Local CLI license](https://github.com/microsoft/foundry-local/blob/main/LICENSE)
+and the model's license. This configuration automatically runs setup with
+`--accept-cli-license` in your own Codespace. Only use it if you accept those
+terms. The CLI uses Microsoft's license terms; `qwen2.5-1.5b` is listed under
+Apache-2.0. Foundry Local may send usage telemetry; see
+[Microsoft's privacy statement](https://go.microsoft.com/fwlink/?LinkID=824704).
+
 1. Sign in to GitHub and open
    [GlobalAICommunity/mcp-fl-workshop](https://github.com/GlobalAICommunity/mcp-fl-workshop).
 2. Select **main** in the repository's branch dropdown.
@@ -86,8 +94,9 @@ automatically and starts the published workshop image.
    **Create codespace on main**. If existing Codespaces are listed, use the
    **+** button to create a new one rather than reopening an old environment.
 5. Wait for VS Code to open in your browser and for the post-creation setup
-   to finish. The setup checks the installed Python packages and MCP server;
-   downloading the CLI and model is the separate step below.
+   to finish. Setup installs the pinned Python requirements and Foundry Local
+   native runtime, downloads the CLI and CPU model, and checks a structured tool
+   call. No separate installation command is needed for a new Codespace.
 
 To choose a machine before creation, select **... > New with options** in
 the Codespaces tab. Keep **Branch: main**, select the **MCP workshop - Foundry
@@ -106,41 +115,32 @@ configuration need package read access. This release is currently private.
 See [package access](IMAGE.md#package-access).
 Do not paste a token into `devcontainer.json`.
 
-### Download the CLI and model once
+### Wait for automatic installation
 
-Creating the Codespace uses only the browser controls above. This next
-command runs **inside the Codespace**, not on your own computer, and prepares
-the software that cannot be redistributed in the image.
+Creating the Codespace uses only the browser controls above. GitHub runs
+`docs/codespaces/setup.sh --accept-cli-license` **inside your Codespace** after
+cloning the repository. The container waits for this step before setup is
+considered complete. Allow time for the CLI and model downloads.
 
-Open **Terminal > New Terminal**. Run every command below in the repository
-root, which is normally `/workspaces/mcp-fl-workshop`:
+Follow progress in the Codespaces creation/setup log. An installation failure
+stops setup rather than marking an incomplete environment ready. After setup
+finishes, open **Terminal > New Terminal**. All lab commands run from the
+repository root, normally `/workspaces/mcp-fl-workshop`.
 
-```bash
-pwd
-python --version
-```
-
-The image uses Python 3.12. The Codespaces configuration selects its virtual
+The image uses Python 3.12 and already contains the workshop dependencies.
+Startup installs any missing requirements and applies the repository's Linux
+pins, so an incomplete Python environment is repaired rather than just reported.
+The Codespaces configuration selects its virtual
 environment, an isolated set of Python packages, through `PATH` and
 `MCP_WORKSHOP_PYTHON`. The setup script also sets these explicitly, so an
 inherited shell setting cannot select a different Python. Do not install
 `requirements-lock.txt`: that file is the Windows lock and includes Windows-only
 packages. You also do not need `workshop.ps1` or `make setup`.
 
-Read the [Foundry Local CLI license](https://github.com/microsoft/foundry-local/blob/main/LICENSE)
-and the model's license before proceeding. The CLI has Microsoft license
-terms, while `qwen2.5-1.5b` is listed under Apache-2.0. Foundry Local may send
-usage telemetry; see [Microsoft's privacy statement](https://go.microsoft.com/fwlink/?LinkID=824704).
-If you agree to the CLI terms, run:
-
-```bash
-bash docs/codespaces/setup.sh --accept-cli-license
-```
-
 The script downloads CLI preview 0.10.0 **directly from Microsoft**, verifies
 its SHA-256 checksum, installs `foundry`, and downloads the SDK's CPU variant
 of `qwen2.5-1.5b` (about 1.8 GB). It then checks that the model requests
-`get_weather` for Pune. Do not close the terminal while this runs.
+`get_weather` for Pune. Do not stop the Codespace while setup runs.
 
 CLI 0.10.0 and Python SDK 2.0.1 are separate version lines. The lab uses the
 SDK in-process, not a CLI HTTP server. A model downloaded using the CLI alone
@@ -156,6 +156,22 @@ Codespaces setup complete. Continue with docs/codespaces/README.md.
 The first message is shared with the Windows readiness checker. It confirms
 the cached model is usable; it does not mean GitHub Codespaces itself works
 without an internet connection.
+
+### Repair or finish setup in an existing Codespace
+
+An older Codespace does not rerun its creation hook just because files on
+`main` changed. Save your work, pull the latest files, and run setup once in
+its terminal:
+
+```bash
+git pull --ff-only
+bash docs/codespaces/setup.sh --accept-cli-license
+```
+
+The script creates the workshop virtual environment if missing, installs the
+Linux requirements and native SDK runtime, and reuses a matching CLI and cached
+model. Rerunning it also retries a failed download. Do not use the Windows
+requirements lock or manually install packages into a different Python.
 
 ### Check readiness at the start of the lab
 
@@ -364,7 +380,7 @@ remain billable until deletion.
 Stopping and restarting preserves the environment. Rebuilding the container
 keeps `/workspaces` but can remove home-directory CLI/model caches and installed
 symlinks; rerun the setup command after a rebuild. A new Codespace starts from
-the published image and needs its own initial downloads.
+the published image and performs its own initial downloads automatically.
 
 ### Troubleshooting
 
