@@ -1,6 +1,6 @@
 {
   "name": "MCP workshop - Foundry Local on Linux",
-  "image": "ghcr.io/globalaicommunity/mcp-fl-workshop:codespaces-20260926",
+  "image": "ghcr.io/globalaicommunity/mcp-fl-workshop@sha256:7dcf83a3117092b7afabdfc5c9abf00f7a8808cec64816949f0835401a5e3390",
   "remoteUser": "vscode",
   "hostRequirements": {
     "cpus": 4,

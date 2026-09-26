@@ -73,8 +73,8 @@ limit before creating a machine.
 ### Create the Codespace
 
 From a terminal with GitHub CLI installed, authenticate and create the
-environment. Replace `BRANCH_WITH_THESE_FILES` with the branch your facilitator
-provides, or `main` after these files have been merged:
+environment. The command selects the published workshop branch; use `main`
+instead after these files have been merged:
 
 ```bash
 gh auth login
@@ -84,7 +84,7 @@ gh auth refresh -h github.com -s codespace
 ```bash
 gh codespace create \
   --repo GlobalAICommunity/mcp-fl-workshop \
-  --branch BRANCH_WITH_THESE_FILES \
+  --branch leestott-foundry-local-codespace \
   --devcontainer-path docs/codespaces/devcontainer.json \
   --machine standardLinux32gb \
   --idle-timeout 30m
@@ -96,7 +96,8 @@ If that machine type is unavailable, ask the facilitator for an allowed
 explicit `--devcontainer-path` is important.
 
 If the image is private, your account and the repository's Codespaces
-configuration need package read access. See [package access](IMAGE.md#package-access).
+configuration need package read access. This release is currently private.
+See [package access](IMAGE.md#package-access).
 Do not paste a token into `devcontainer.json`.
 
 ### Download the CLI and model once

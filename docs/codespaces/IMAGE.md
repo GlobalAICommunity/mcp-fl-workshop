@@ -31,6 +31,24 @@ are also downloaded per user, under their own license. Do not publish a
 | CLI and CPU model | Downloaded separately in the user's Codespace |
 | Platform | `linux/amd64`; this is not a multi-architecture image |
 
+### Published release
+
+Published on 2026-09-26 through
+[workflow run 36227366613](https://github.com/GlobalAICommunity/mcp-fl-workshop/actions/runs/36227366613).
+The [GHCR package](https://github.com/orgs/GlobalAICommunity/packages/container/package/mcp-fl-workshop)
+is **private** and linked to this repository. Grant Codespaces/learner access
+before distributing the lab link.
+
+```text
+Tag: ghcr.io/globalaicommunity/mcp-fl-workshop:codespaces-20260926
+Digest: ghcr.io/globalaicommunity/mcp-fl-workshop@sha256:7dcf83a3117092b7afabdfc5c9abf00f7a8808cec64816949f0835401a5e3390
+Source: 9591715 (image build and dependency files)
+```
+
+The Codespaces configuration pins this digest rather than the mutable tag.
+The release passed 25 deterministic tests and Linux setup, native CPU
+tool-calling, terminal-agent, and browser API checks.
+
 The Dockerfile removes the base image's unused Yarn APT source because its
 signing key no longer validates. Debian repository signature verification
 remains enabled. The workshop does not require Yarn.
