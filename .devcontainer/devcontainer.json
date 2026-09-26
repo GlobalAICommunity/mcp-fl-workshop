@@ -2,6 +2,11 @@
   "name": "MCP workshop - Foundry Local on Linux",
   "image": "ghcr.io/globalaicommunity/mcp-fl-workshop@sha256:7dcf83a3117092b7afabdfc5c9abf00f7a8808cec64816949f0835401a5e3390",
   "remoteUser": "vscode",
+  "remoteEnv": {
+    "VIRTUAL_ENV": "/opt/workshop-venv",
+    "MCP_WORKSHOP_PYTHON": "/opt/workshop-venv/bin/python",
+    "PATH": "/opt/workshop-venv/bin:${containerEnv:PATH}"
+  },
   "hostRequirements": {
     "cpus": 4,
     "memory": "16gb",
@@ -14,7 +19,13 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "python scripts/verify_setup.py --skip-model",
+  "postCreateCommand": [
+    "/usr/bin/env",
+    "MCP_WORKSHOP_PYTHON=/opt/workshop-venv/bin/python",
+    "/opt/workshop-venv/bin/python",
+    "scripts/verify_setup.py",
+    "--skip-model"
+  ],
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python"],

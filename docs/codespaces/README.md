@@ -120,8 +120,10 @@ pwd
 python --version
 ```
 
-The image uses Python 3.12. Its virtual environment, an isolated set of Python
-packages, is already selected through `PATH`. Do not install
+The image uses Python 3.12. The Codespaces configuration selects its virtual
+environment, an isolated set of Python packages, through `PATH` and
+`MCP_WORKSHOP_PYTHON`. The setup script also sets these explicitly, so an
+inherited shell setting cannot select a different Python. Do not install
 `requirements-lock.txt`: that file is the Windows lock and includes Windows-only
 packages. You also do not need `workshop.ps1` or `make setup`.
 
@@ -370,6 +372,7 @@ the published image and needs its own initial downloads.
 |---|---|
 | `denied` when pulling the image | Ask the facilitator to grant package/Codespaces access or make the package public if approved |
 | `No module named fastmcp` | Check `which python`; it should select `/opt/workshop-venv/bin/python`, not a manually created `.venv` |
+| `No module named foundry_local_sdk` or missing `.venv/bin/python` | Restore the workshop environment using the commands below; the image's SDK may already be installed |
 | Windows packages fail to install | Do not use the Windows lock; recreate the Codespace with this configuration |
 | `foundry: command not found` | Rerun `setup.sh --accept-cli-license`; the link may have been removed by a rebuild |
 | Model is not cached | Run setup while online; a CLI-only download does not establish SDK readiness |
@@ -381,3 +384,29 @@ the published image and needs its own initial downloads.
 For native model diagnostics, run
 `MCP_WORKSHOP_LOG_DIR=./foundry-local-logs python scripts/verify_setup.py`.
 Review logs before sharing them; do not publish personal prompts or credentials.
+
+### Repair Python selection in an existing Codespace
+
+An existing terminal may select the wrong Python or lack
+`MCP_WORKSHOP_PYTHON`. The checker then looks for a repository-local `.venv`
+even though the image's packages are installed in `/opt/workshop-venv`.
+There is no need to reinstall the SDK if this import succeeds:
+
+```bash
+/opt/workshop-venv/bin/python -c 'import foundry_local_sdk; print(foundry_local_sdk.__file__)'
+```
+
+Set the environment in the same terminal, then rerun setup:
+
+```bash
+export VIRTUAL_ENV=/opt/workshop-venv
+export PATH="$VIRTUAL_ENV/bin:$PATH"
+export MCP_WORKSHOP_PYTHON="$VIRTUAL_ENV/bin/python"
+bash docs/codespaces/setup.sh --accept-cli-license
+```
+
+These exports also fix `python` commands for the rest of that terminal session.
+The updated setup script sets them for its own child processes, but cannot
+change the terminal that launched it. For future terminals, use the current
+`.devcontainer/devcontainer.json` when creating or rebuilding the Codespace.
+Save your work before rebuilding and expect to rerun CLI/model setup afterward.

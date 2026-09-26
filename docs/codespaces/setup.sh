@@ -16,7 +16,14 @@ fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
-python scripts/verify_setup.py --skip-model
+export VIRTUAL_ENV="/opt/workshop-venv"
+export MCP_WORKSHOP_PYTHON="$VIRTUAL_ENV/bin/python"
+export PATH="$VIRTUAL_ENV/bin:$PATH"
+if [[ ! -x "$MCP_WORKSHOP_PYTHON" ]]; then
+    echo "Workshop Python is missing at $MCP_WORKSHOP_PYTHON. Create or rebuild the Codespace with .devcontainer/devcontainer.json; do not install the Windows requirements-lock.txt." >&2
+    exit 1
+fi
+"$MCP_WORKSHOP_PYTHON" scripts/verify_setup.py --skip-model
 
 version="0.10.0"
 archive="foundry-${version}-linux-x64.tar.gz"
@@ -47,6 +54,6 @@ fi
 foundry --version
 
 echo "Downloading the SDK's CPU model cache and checking a structured tool call..."
-python scripts/prepare_vm.py
-python scripts/verify_setup.py
+"$MCP_WORKSHOP_PYTHON" scripts/prepare_vm.py
+"$MCP_WORKSHOP_PYTHON" scripts/verify_setup.py
 echo "Codespaces setup complete. Continue with docs/codespaces/README.md."
