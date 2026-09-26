@@ -36,6 +36,11 @@ credentials during the session.
 
 Full setup guidance is in [docs/01-get-started.md](docs/01-get-started.md).
 
+For the online Linux alternative, use the
+[GitHub Codespaces lab](docs/codespaces/README.md). Facilitators can build and
+distribute its [container image](docs/codespaces/IMAGE.md). This is separate
+from the prebuilt offline Windows VM.
+
 ## The 90-minute route
 
 | Stage | Lesson | Time |

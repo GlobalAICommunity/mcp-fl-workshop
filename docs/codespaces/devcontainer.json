@@ -1,0 +1,29 @@
+{
+  "name": "MCP workshop - Foundry Local on Linux",
+  "image": "ghcr.io/globalaicommunity/mcp-fl-workshop:codespaces-20260926",
+  "remoteUser": "vscode",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "32gb"
+  },
+  "forwardPorts": [7932],
+  "portsAttributes": {
+    "7932": {
+      "label": "Bharat Travel Desk",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "python scripts/verify_setup.py --skip-model",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/workshop-venv/bin/python"
+      }
+    },
+    "codespaces": {
+      "openFiles": ["docs/codespaces/README.md"]
+    }
+  }
+}

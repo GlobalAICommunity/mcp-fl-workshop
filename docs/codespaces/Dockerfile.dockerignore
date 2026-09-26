@@ -1,0 +1,8 @@
+**
+!requirements-server.txt
+!LICENSE
+!docs/
+!docs/codespaces/
+!docs/codespaces/Dockerfile
+!docs/codespaces/Dockerfile.dockerignore
+!docs/codespaces/requirements-linux.lock

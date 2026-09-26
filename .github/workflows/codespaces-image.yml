@@ -1,0 +1,57 @@
+name: Publish Codespaces image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - leestott-foundry-local-codespace
+    paths:
+      - .github/workflows/codespaces-image.yml
+      - docs/codespaces/Dockerfile
+      - docs/codespaces/Dockerfile.dockerignore
+      - docs/codespaces/requirements-linux.lock
+      - requirements-server.txt
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: codespaces-image
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'GlobalAICommunity/mcp-fl-workshop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build redistributable image
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg SOURCE_REVISION="$REVISION" \
+            -f docs/codespaces/Dockerfile \
+            -t ghcr.io/globalaicommunity/mcp-fl-workshop:codespaces-20260926 .
+      - name: Check packages, protocol and documentation
+        run: |
+          docker run --rm \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspaces/mcp-fl-workshop" \
+            --workdir /workspaces/mcp-fl-workshop \
+            ghcr.io/globalaicommunity/mcp-fl-workshop:codespaces-20260926 \
+            bash -c 'python scripts/verify_setup.py --skip-model &&
+                     python -m unittest discover -s tests &&
+                     python scripts/validate_content.py'
+      - name: Publish using the repository token
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: |
+          config_dir="$(mktemp -d)"
+          cleanup() { rm -f "$config_dir/config.json"; rmdir "$config_dir"; }
+          trap cleanup EXIT
+          printf '%s' "$GHCR_TOKEN" | docker --config "$config_dir" login ghcr.io \
+            --username "$GHCR_USER" --password-stdin
+          docker --config "$config_dir" push ghcr.io/globalaicommunity/mcp-fl-workshop:codespaces-20260926
+          docker --config "$config_dir" logout ghcr.io
