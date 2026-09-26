@@ -166,7 +166,8 @@ rmdir "$docker_config"
 
 If publishing fails, still run the logout and cleanup commands. A successful
 push prints a `sha256:...` digest. Record the full `ghcr.io/...@sha256:...`
-reference and use it in [devcontainer.json](devcontainer.json) to prevent
+reference and use it in
+[.devcontainer/devcontainer.json](../../.devcontainer/devcontainer.json) to prevent
 an accidental tag update from changing the learner environment.
 
 ### Package access
@@ -185,19 +186,23 @@ Private-registry setup is described in
 
 ## Create Codespaces from this image
 
-The configuration and lab instructions are merged into `main`. Direct learners
-to the [learner guide](README.md), whose creation command uses `--branch main`
-and `--devcontainer-path docs/codespaces/devcontainer.json`. The published image
-does not contain the repository checkout; Codespaces clones `main` separately.
+The default configuration is
+[.devcontainer/devcontainer.json](../../.devcontainer/devcontainer.json).
+Ensure it is on `main` before sharing the browser instructions. Direct learners
+to the [learner guide](README.md): open the repository, select **main**, then
+choose **Code > Codespaces > Create codespace on main**. No local GitHub CLI
+or Docker installation is required.
 
-Keep the explicit configuration path even after merging. The file lives under
-`docs/codespaces`, so the ordinary **Create codespace on main** button does not
-automatically select this workshop environment.
+GitHub discovers the default configuration automatically. For machine and
+region choices, learners can use **... > New with options** and select
+4 cores / 16 GB RAM or larger. The published image does not contain the
+repository checkout; Codespaces clones `main` separately.
 
-To make this the repository's default Codespaces configuration later, add a
-root `.devcontainer/devcontainer.json` with the same image/settings in a
-separate change. Keeping the configuration here avoids changing the existing
-Windows workshop by default.
+The previous `docs/codespaces/devcontainer.json` has moved to the default
+location so there is only one configuration to maintain. Update any saved
+CLI commands or prebuild configurations to use `.devcontainer/devcontainer.json`.
+The build files and lab instructions remain under `docs/codespaces`, and the
+offline Windows workshop commands are unchanged.
 
 For faster workspace creation, consider
 [Codespaces prebuilds](https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds).

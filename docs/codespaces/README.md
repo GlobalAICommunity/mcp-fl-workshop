@@ -71,33 +71,35 @@ Use **4 cores and 16 GB RAM** where available. There is no GPU requirement.
 GitHub Codespaces compute and storage may be billable; check your spending
 limit before creating a machine.
 
-### Create the Codespace
+### Create the Codespace in your browser
 
-From a terminal with GitHub CLI installed, authenticate and create the
-environment. The command uses `main` and explicitly selects the workshop's
-Codespaces configuration:
+You do not need GitHub CLI, Docker, or a local terminal to create the
+environment. GitHub reads
+[.devcontainer/devcontainer.json](../../.devcontainer/devcontainer.json)
+automatically and starts the published workshop image.
 
-```bash
-gh auth login
-gh auth refresh -h github.com -s codespace
-```
+1. Sign in to GitHub and open
+   [GlobalAICommunity/mcp-fl-workshop](https://github.com/GlobalAICommunity/mcp-fl-workshop).
+2. Select **main** in the repository's branch dropdown.
+3. Click the green **Code** button, then select the **Codespaces** tab.
+4. Check the message showing who pays for the Codespace, then click
+   **Create codespace on main**. If existing Codespaces are listed, use the
+   **+** button to create a new one rather than reopening an old environment.
+5. Wait for VS Code to open in your browser and for the post-creation setup
+   to finish. The setup checks the installed Python packages and MCP server;
+   downloading the CLI and model is the separate step below.
 
-```bash
-gh codespace create \
-  --repo GlobalAICommunity/mcp-fl-workshop \
-  --branch main \
-  --devcontainer-path docs/codespaces/devcontainer.json \
-  --machine standardLinux32gb \
-  --idle-timeout 30m
-```
+To choose a machine before creation, select **... > New with options** in
+the Codespaces tab. Keep **Branch: main**, select the **MCP workshop - Foundry
+Local on Linux** dev container configuration, and choose **4 cores / 16 GB
+RAM** or larger. Click **Create codespace**. If the organization does not
+offer a suitable machine, ask the facilitator before continuing.
 
-Open the returned Codespace from [Your codespaces](https://github.com/codespaces).
-If that machine type is unavailable, ask the facilitator for an allowed
-4-core/16-GB type. The configuration lives outside `.devcontainer`, so the
-explicit `--devcontainer-path` is important.
-Merging the files to `main` does not make this configuration the default:
-the ordinary **Create codespace on main** button may use GitHub's default
-environment instead. Use the command above to select the workshop image.
+You can return to the environment from
+[Your codespaces](https://github.com/codespaces). Creating a new Codespace
+does not update an existing one. If you previously used the old configuration
+under `docs/codespaces`, create a new Codespace from `main` after saving your
+work; the default configuration now lives under `.devcontainer`.
 
 If the image is private, your account and the repository's Codespaces
 configuration need package read access. This release is currently private.
@@ -105,6 +107,10 @@ See [package access](IMAGE.md#package-access).
 Do not paste a token into `devcontainer.json`.
 
 ### Download the CLI and model once
+
+Creating the Codespace uses only the browser controls above. This next
+command runs **inside the Codespace**, not on your own computer, and prepares
+the software that cannot be redistributed in the image.
 
 Open **Terminal > New Terminal**. Run every command below in the repository
 root, which is normally `/workspaces/mcp-fl-workshop`:
