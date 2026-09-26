@@ -63,8 +63,9 @@ flowchart LR
 ## 1. Open and prepare your Linux environment
 
 Start with a GitHub account that can create Codespaces for this repository.
-The facilitator must first publish the image and push these files to a
-repository branch. A folder on someone's local computer is not enough.
+The workshop configuration and instructions are available on `main`, and the
+container image is already published. You do not need the original setup branch
+or to build the image yourself.
 
 Use **4 cores and 16 GB RAM** where available. There is no GPU requirement.
 GitHub Codespaces compute and storage may be billable; check your spending
@@ -73,8 +74,8 @@ limit before creating a machine.
 ### Create the Codespace
 
 From a terminal with GitHub CLI installed, authenticate and create the
-environment. The command selects the published workshop branch; use `main`
-instead after these files have been merged:
+environment. The command uses `main` and explicitly selects the workshop's
+Codespaces configuration:
 
 ```bash
 gh auth login
@@ -84,7 +85,7 @@ gh auth refresh -h github.com -s codespace
 ```bash
 gh codespace create \
   --repo GlobalAICommunity/mcp-fl-workshop \
-  --branch leestott-foundry-local-codespace \
+  --branch main \
   --devcontainer-path docs/codespaces/devcontainer.json \
   --machine standardLinux32gb \
   --idle-timeout 30m
@@ -94,6 +95,9 @@ Open the returned Codespace from [Your codespaces](https://github.com/codespaces
 If that machine type is unavailable, ask the facilitator for an allowed
 4-core/16-GB type. The configuration lives outside `.devcontainer`, so the
 explicit `--devcontainer-path` is important.
+Merging the files to `main` does not make this configuration the default:
+the ordinary **Create codespace on main** button may use GitHub's default
+environment instead. Use the command above to select the workshop image.
 
 If the image is private, your account and the repository's Codespaces
 configuration need package read access. This release is currently private.

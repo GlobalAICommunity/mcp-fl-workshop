@@ -1,8 +1,8 @@
 # Build and distribute the Codespaces image
 
 This guide is for facilitators. The [learner guide](README.md) explains how to
-complete the lab after the image has been published and these files are
-available on a repository branch.
+complete the lab using the published image and the configuration now available
+on `main`.
 
 The image is an environment, not a snapshot of someone's running Codespace.
 It deliberately excludes credentials, learner files, CLI binaries, model
@@ -141,10 +141,12 @@ which builds and publishes with the repository's `GITHUB_TOKEN`. It requests
 Its automated checks cover packages, protocol behavior, unit tests and links;
 the full model acceptance described above remains a release prerequisite.
 
-The initial release also triggers on image-related pushes to
-`leestott-foundry-local-codespace`. After merging, use **Actions > Publish
-Codespaces image > Run workflow**. Set a new tag in the workflow and
-configuration when intentionally releasing a different environment.
+To publish from `main`, use **Actions > Publish Codespaces image > Run workflow**,
+select **main** in the branch selector, and confirm **Run workflow**.
+The initial-release push trigger is limited to the original setup branch;
+pushes or merges to `main` do not automatically rebuild the image.
+Set a new tag in the workflow when intentionally releasing a different
+environment, then update the configuration with the resulting image digest.
 
 ### Publish from your terminal
 
@@ -183,10 +185,14 @@ Private-registry setup is described in
 
 ## Create Codespaces from this image
 
-Push these files to the branch learners will use. The published image does
-not contain the repository checkout, so the image and that branch are both
-needed. The learner command explicitly selects
-`docs/codespaces/devcontainer.json`.
+The configuration and lab instructions are merged into `main`. Direct learners
+to the [learner guide](README.md), whose creation command uses `--branch main`
+and `--devcontainer-path docs/codespaces/devcontainer.json`. The published image
+does not contain the repository checkout; Codespaces clones `main` separately.
+
+Keep the explicit configuration path even after merging. The file lives under
+`docs/codespaces`, so the ordinary **Create codespace on main** button does not
+automatically select this workshop environment.
 
 To make this the repository's default Codespaces configuration later, add a
 root `.devcontainer/devcontainer.json` with the same image/settings in a
