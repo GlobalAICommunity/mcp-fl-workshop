@@ -128,7 +128,7 @@ def validate_learn(repo_root: Path, errors: list[str]) -> None:
 def validate_links(repo_root: Path, errors: list[str]) -> None:
     paths = [
         repo_root / "README.md",
-        *(repo_root / "docs").glob("*.md"),
+        *(repo_root / "docs").rglob("*.md"),
         *(repo_root / "global-ai-learn" / "mcp-workshop").rglob("*.md"),
     ]
     for path in paths:
